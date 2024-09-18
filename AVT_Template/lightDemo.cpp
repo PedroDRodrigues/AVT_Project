@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <random>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
@@ -84,6 +85,30 @@ float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 // 1 - ORTHO_TOP, 2 - PERSPECTIVE_TOP, 3 - PERSPECTIVE_FOLLOW 
 int activeCamera = 1;
+
+float terrainSize = 20.0f;
+float waterSize = 10.0f;
+
+float randomBetween(float min, float max) {
+	random_device rd; // obtain a random number from hardware
+	mt19937 gen(rd()); // seed the generator
+	uniform_real_distribution<> dis(min, max); // define the range
+	return dis(gen);
+}
+
+pair<float, float> generateRandomPosition() {
+	float x, y;
+	while (true) {
+		x = randomBetween(-(terrainSize / 2 - 1), (terrainSize / 2 - 1));
+		y = randomBetween(-(terrainSize / 2 - 1), (terrainSize / 2 - 1));
+
+		if (!(x >= -(waterSize / 2 + 1) && x <= (waterSize / 2 + 1)
+			&& y >= -(waterSize / 2 + 1) && y <= (waterSize / 2 + 1))) {
+			break;
+		}
+	}
+	return make_pair(x, y);
+}
 
 void timer(int value)
 {
@@ -173,38 +198,79 @@ void renderScene(void) {
 
 	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
-	for (int i = 0 ; i < 1; ++i) {
-		for (int j = 0; j < 5; ++j) {
+	for (int i = 0; i < 12; i++) {
 
-			// send the material
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, myMeshes[objId].mat.shininess);
-			pushMatrix(MODEL);
-			translate(MODEL, i*2.0f, 0.0f, j*2.0f);
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
 
-			// send matrices to OGL
-			computeDerivedMatrix(PROJ_VIEW_MODEL);
-			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-			computeNormalMatrix3x3();
-			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-			// Render mesh
-			glBindVertexArray(myMeshes[objId].vao);
-			
-			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
-
-			popMatrix(MODEL);
-			objId++;
+		pushMatrix(MODEL);
+		if (i == 0) { // green floor
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
+		else if (i == 1) { // blue water
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			translate(MODEL, 0.0f, 0.0f, 0.005f);
+		}
+		else { // houses
+			translate(MODEL, myMeshes[objId].xPosition, 0.0f, myMeshes[objId].yPosition);
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
 	}
+
+	//for (int i = 0 ; i < 1; ++i) {
+	//	for (int j = 0; j < 5; ++j) {
+
+	//		// send the material
+	//		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+	//		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+	//		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+	//		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+	//		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+	//		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+	//		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+	//		glUniform1f(loc, myMeshes[objId].mat.shininess);
+	//		pushMatrix(MODEL);
+	//		translate(MODEL, i*2.0f, 0.0f, j*2.0f);
+
+	//		// send matrices to OGL
+	//		computeDerivedMatrix(PROJ_VIEW_MODEL);
+	//		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	//		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	//		computeNormalMatrix3x3();
+	//		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	//		// Render mesh
+	//		glBindVertexArray(myMeshes[objId].vao);
+	//		
+	//		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+	//		glBindVertexArray(0);
+
+	//		popMatrix(MODEL);
+	//		objId++;
+	//	}
+	//}
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -436,77 +502,130 @@ void init()
 	}
 	ilInit();
 
-	/// Initialization of freetype library with font_name file
-	freeType_init(font_name);
+	///// Initialization of freetype library with font_name file
+	//freeType_init(font_name);
 
 	// set the camera position based on its spherical coordinates
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r *   						     sin(beta * 3.14f / 180.0f);
 
+	float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
+	float diff_green[] = { 0.0f, 0.8f, 0.0f, 1.0f };
+	float spec_green[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	float emissive_green[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess_green = 20.0f;
+	int texcount_green = 0;
+
+	amesh = createQuad(terrainSize, terrainSize);
+	memcpy(amesh.mat.ambient, amb_green, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff_green, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec_green, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive_green, 4 * sizeof(float));
+	amesh.mat.shininess = shininess_green;
+	amesh.mat.texCount = texcount_green;
+	myMeshes.push_back(amesh);
+
+	float amb_lightblue[] = { 0.0f, 0.2f, 0.3f, 1.0f };
+	float diff_lightblue[] = { 0.4f, 0.6f, 0.8f, 1.0f };
+	float spec_lightblue[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	float emissive_lightblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess_lightblue = 100.0f;
+	int texcount_lightblue = 0;
+
+	amesh = createQuad(waterSize, waterSize);
+	memcpy(amesh.mat.ambient, amb_lightblue, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff_lightblue, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec_lightblue, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive_lightblue, 4 * sizeof(float));
+	amesh.mat.shininess = shininess_lightblue;
+	amesh.mat.texCount = texcount_lightblue;
+	myMeshes.push_back(amesh);
+
+	float amb_beige[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float diff_beige[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+	float spec_beige[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float emissive_beige[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess_beige = 100.0f;
+	int texcount_beige = 0;
+
+	for (int i = 0; i < 10; i++) { // create 10 houses
+		amesh = createCube();
+		memcpy(amesh.mat.ambient, amb_beige, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff_beige, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec_beige, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive_beige, 4 * sizeof(float));
+		amesh.mat.shininess = shininess_beige;
+		amesh.mat.texCount = texcount_beige;
+
+		pair<float, float> point = generateRandomPosition();
+		amesh.xPosition = point.first;
+		amesh.yPosition = point.second;
+		myMeshes.push_back(amesh);
+	}
 	
-	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
-	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
-	float shininess= 100.0f;
-	int texcount = 0;
+	//float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
+	//float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
+	//float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	//float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	//float shininess= 100.0f;
+	//int texcount = 0;
 
-	// create geometry and VAO of the pawn
-	amesh = createPawn();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	//// create geometry and VAO of the pawn
+	//amesh = createPawn();
+	//memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	//memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	//memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	//memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	//amesh.mat.shininess = shininess;
+	//amesh.mat.texCount = texcount;
+	//myMeshes.push_back(amesh);
 
-	
-	// create geometry and VAO of the sphere
-	amesh = createSphere(1.0f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	//
+	//// create geometry and VAO of the sphere
+	//amesh = createSphere(1.0f, 20);
+	//memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	//memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	//memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	//memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	//amesh.mat.shininess = shininess;
+	//amesh.mat.texCount = texcount;
+	//myMeshes.push_back(amesh);
 
-	float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
-	float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
-	float spec1[] = {0.9f, 0.9f, 0.9f, 1.0f};
-	shininess=500.0;
+	//float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
+	//float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
+	//float spec1[] = {0.9f, 0.9f, 0.9f, 1.0f};
+	//shininess=500.0;
 
-	// create geometry and VAO of the cylinder
-	amesh = createCylinder(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	//// create geometry and VAO of the cylinder
+	//amesh = createCylinder(1.5f, 0.5f, 20);
+	//memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
+	//memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
+	//memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
+	//memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	//amesh.mat.shininess = shininess;
+	//amesh.mat.texCount = texcount;
+	//myMeshes.push_back(amesh);
 
-	// create geometry and VAO of the cone
-	amesh = createCone(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	//// create geometry and VAO of the cone
+	//amesh = createCone(1.5f, 0.5f, 20);
+	//memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	//memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	//memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	//memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	//amesh.mat.shininess = shininess;
+	//amesh.mat.texCount = texcount;
+	//myMeshes.push_back(amesh);
 
-	// create geometry and VAO of the cube
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	//// create geometry and VAO of the cube
+	//amesh = createCube();
+	//memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	//memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	//memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	//memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	//amesh.mat.shininess = shininess;
+	//amesh.mat.texCount = texcount;
+	//myMeshes.push_back(amesh);
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
