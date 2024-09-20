@@ -279,11 +279,12 @@ void renderScene(void) {
 	pushMatrix(PROJECTION);
 	loadIdentity(PROJECTION);
 
-	int ratio = (1.0f * WinX) / WinY;
-	if (cams[activeCam].type == 0) {
-		perspective(53.13f, ratio, 0.1f, 1000.0f);
+	int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
+	
+	if (cams[activeCam].type == 0) { // Perspective Camera
+		perspective(53.13f, ratio, 1, 100);
 	} else {
-		ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+		ortho(ratio * -25, ratio * 25, -25, 25, 0.1, 100);
 	}
 
 	pushMatrix(VIEW);
