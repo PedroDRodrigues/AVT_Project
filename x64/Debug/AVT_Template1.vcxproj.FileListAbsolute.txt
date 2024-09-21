@@ -1,0 +1,2 @@
+C:\Workplace\IST\Year 1\P1\AVT\PROJECT\AVT_Project\AVT_Template\x64\Debug\AVT_Template1.exe
+C:\Workplace\IST\Year 1\P1\AVT\PROJECT\AVT_Project\x64\Debug\AVT_Template1.exe
