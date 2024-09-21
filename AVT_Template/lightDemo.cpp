@@ -42,6 +42,8 @@ void renderScene(void); // ACHO QUE NÃO É NECESSÁRIO
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
 
+const float DEG2RAD = 3.14f / 180.0f;
+
 unsigned int FrameCount = 0;
 
 //shaders
@@ -68,21 +70,6 @@ GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
-	
-// Camera Position
-float camX, camY, camZ;
-
-//camera declarations
-class Camera {
-	public:
-		float camPos[3] = { 0.0f, 0.0f ,0.0f };
-		float camTarget[3] = { 0.0f, 0.0f ,0.0f };
-		int type = 0; //0: perspective; 1: orthographic 
-};
-
-Camera cams[3];
-
-int activeCam = 0;
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -91,6 +78,26 @@ int startX, startY, tracking = 0;
 float alpha = 39.0f, beta = 51.0f;
 float r = 10.0f;
 
+//camera declarations
+enum CameraType { PERSPECTIVE, ORTHOGONAL };
+class Camera {
+	public:
+		float camPos[3] = { 0.0f, 0.0f ,0.0f };
+		float camTarget[3] = { 0.0f, 0.0f ,0.0f };
+		CameraType type = PERSPECTIVE;
+
+	void updatePosition(float alpha, float beta, float r) {
+		camPos[0] = r * sin(alpha * DEG2RAD) * cos(beta * DEG2RAD);
+		camPos[2] = r * cos(alpha * DEG2RAD) * cos(beta * DEG2RAD);
+		camPos[1] = r * sin(beta * DEG2RAD);
+
+		glutPostRedisplay();
+	}
+};
+
+Camera cams[3];
+int activeCam = 0;
+
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
@@ -98,6 +105,9 @@ float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 float terrainSize = 20.0f;
 float waterSize = 10.0f;
+
+float rotationSensitivity = 0.01f;
+float zoomSensitivity = 0.10f;
 
 float randomBetween(float min, float max) {
 	random_device rd; // obtain a random number from hardware
@@ -144,16 +154,27 @@ void refresh(int value)
 //
 
 void changeSize(int w, int h) {
-
 	float ratio;
+
 	// Prevent a divide by zero, when window is too short
-	if(h == 0)
+	if (h == 0)
 		h = 1;
+
 	// set the viewport to be the entire window
 	glViewport(0, 0, w, h);
+
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
 	loadIdentity(PROJECTION);
+
+	//switch (activeCam) {
+	//case 0:
+	//	perspective(53.13f, ratio, 0.1f, 1000.0f);
+	//	break;
+	//case 1:
+	//	ortho(-10.0f, 10.0f, -10.0f / ratio, 10.0f / ratio, 0.1f, 1000.0f);
+	//	break;
+	//}
 	perspective(53.13f, ratio, 0.1f, 1000.0f); // VERIFICAR SE NÃO LEVA Switch(activeCam)
 }
 
@@ -171,8 +192,17 @@ void renderScene(void) {
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
+
 	// set the camera using a function similar to gluLookAt
-	lookAt(cams[activeCam].camPos[0], cams[activeCam].camPos[1], cams[activeCam].camPos[2], cams[activeCam].camTarget[0], cams[activeCam].camTarget[1], cams[activeCam].camTarget[20], 0, 1, 0);
+	lookAt(
+		cams[activeCam].camPos[0],
+		cams[activeCam].camPos[1],
+		cams[activeCam].camPos[2],
+		cams[activeCam].camTarget[0],
+		cams[activeCam].camTarget[1],
+		cams[activeCam].camTarget[2],
+		0, 1, 0
+	);
 
 	// use our shader
 
@@ -228,60 +258,23 @@ void renderScene(void) {
 		objId++;
 	}
 
-	/*for (int i = 0; i < 1; ++i) {
-		for (int j = 0; j < 5; ++j) {
-
-			// send the material
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, myMeshes[objId].mat.shininess);
-			pushMatrix(MODEL);
-			translate(MODEL, i * 2.0f, 0.0f, j * 2.0f);
-
-			if (i == 0 && j == 0) {
-				rotate(MODEL, -90, 1, 0, 0);
-			}
-
-			// send matrices to OGL
-			computeDerivedMatrix(PROJ_VIEW_MODEL);
-			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-			computeNormalMatrix3x3();
-			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-			// Render mesh
-			glBindVertexArray(myMeshes[objId].vao);
-
-			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
-
-			popMatrix(MODEL);
-			objId++;
-		}
-	}*/
-
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
-	//viewer at origin looking down at  negative z direction
+	// viewer at origin looking down at  negative z direction
 	pushMatrix(MODEL);
 	loadIdentity(MODEL);
 	pushMatrix(PROJECTION);
 	loadIdentity(PROJECTION);
 
 	int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
-	
-	if (cams[activeCam].type == 0) { // Perspective Camera
+	if (cams[activeCam].type == PERSPECTIVE) {
 		perspective(53.13f, ratio, 1, 100);
 	} else {
 		ortho(ratio * -25, ratio * 25, -25, 25, 0.1, 100);
@@ -307,18 +300,26 @@ void renderScene(void) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
+
+	int m_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+	int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
+
 	switch(key) {
-		case 27:
-			glutLeaveMainLoop();
+		case '1': // orthogonal top
+			printf("%s\n", "orthogonal top");
+			activeCam = 0;
+			//ortho(-10.0f, 10.0f, -10.0f / ratio, 10.0f / ratio, 0.1f, 1000.0f);
 			break;
-		case 1: 
-			activeCam = 0; 
+		case '2': // perspective top
+			printf("%s\n", "perspective top");
+			activeCam = 1;
+
 			break;
-		case 2: 
-			activeCam = 1; 
-			break;
-		case 3: 
-			activeCam = 2; 
+		case '3': // perspective follow
+			printf("%s\n", "perspective follow");
+			activeCam = 2;
+			//perspective(53.13f, ratio, 0.1f, 1000.0f);
 			break;
 
 		case 'c': 
@@ -327,6 +328,10 @@ void processKeys(unsigned char key, int xx, int yy)
 		
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+
+		case 27:
+			glutLeaveMainLoop();
+			break;
 	}
 }
 
@@ -341,6 +346,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 	if (state == GLUT_DOWN)  {
 		startX = xx;
 		startY = yy;
+
 		if (button == GLUT_LEFT_BUTTON)
 			tracking = 1;
 		else if (button == GLUT_RIGHT_BUTTON)
@@ -349,15 +355,15 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 	//stop tracking the mouse
 	else if (state == GLUT_UP) {
-		if (tracking == 1) {
-			alpha -= (xx - startX);
-			beta += (yy - startY);
-		}
-		else if (tracking == 2) {
-			r += (yy - startY) * 0.01f;
-			if (r < 0.1f)
-				r = 0.1f;
-		}
+		//if (tracking == 1) {
+		//	alpha -= (xx - startX);
+		//	beta += (yy - startY);
+		//}
+		//else if (tracking == 2) {
+		//	r += (yy - startY) * 0.01f;
+		//	if (r < 0.1f)
+		//		r = 0.1f;
+		//}
 		tracking = 0;
 	}
 }
@@ -371,15 +377,13 @@ void processMouseMotion(int xx, int yy)
 	float alphaAux, betaAux;
 	float rAux;
 
-	deltaX =  - xx + startX;
-	deltaY =    yy - startY;
+	deltaX = -(xx - startX);
+	deltaY = yy - startY;
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-
-
-		alphaAux = alpha + deltaX;
-		betaAux = beta + deltaY;
+		alphaAux = alpha + deltaX * rotationSensitivity;
+		betaAux = beta + deltaY * rotationSensitivity;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
@@ -389,17 +393,14 @@ void processMouseMotion(int xx, int yy)
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
-
 		alphaAux = alpha;
 		betaAux = beta;
-		rAux = r + (deltaY * 0.01f);
+		rAux = r + (deltaY * zoomSensitivity);
 		if (rAux < 0.1f)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux *   						       sin(betaAux * 3.14f / 180.0f);
+	cams[activeCam].updatePosition(alphaAux, betaAux, rAux);
 
 	// EXERCISE 2 - 2 : to orient the moving camera with the mouse movement and
 	//  simultaneously pressing its left key
@@ -408,10 +409,9 @@ void processMouseMotion(int xx, int yy)
 		beta = betaAux;
 	}
 
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+	// uncomment this if not using an idle or refresh func
+	// glutPostRedisplay();
 }
-
 
 void mouseWheel(int wheel, int direction, int x, int y) {
 
@@ -419,9 +419,7 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 	if (r < 0.1f)
 		r = 0.1f;
 
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	cams[activeCam].updatePosition(alpha, beta, r);
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
@@ -502,97 +500,17 @@ void init()
 	freeType_init(font_name);
 
 	// set the camera position based on its spherical coordinates
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r * sin(beta * 3.14f / 180.0f);
+	cams[activeCam].updatePosition(alpha, beta, r);
 
-	//top
-	cams[0].camPos[0] = 20;
-	cams[0].camPos[1] = 0.01;
-	cams[0].camPos[2] = 0.01;
+	////top
+	//cams[0].camPos[0] = 20;
+	//cams[0].camPos[1] = 0.01;
+	//cams[0].camPos[2] = 0.01;
 
-	cams[1].camPos[0] = 20;
-	cams[1].camPos[1] = 0.01;
-	cams[1].camPos[2] = 0.01;
-	cams[1].type = 1;
-
-	//cams[2].camPos[0] =
-	//cams[2].camPos[1] =
-	//cams[2].camPos[2] =
-	
-
-	/*float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
-	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
-	float shininess= 100.0f;
-	int texcount = 0;
-
-	// create Quad
-	amesh = createQuad(500, 500);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	// create geometry and VAO of the pawn
-	amesh = createPawn();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	
-	// create geometry and VAO of the sphere
-	amesh = createSphere(1.0f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
-	float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
-	float spec1[] = {0.9f, 0.9f, 0.9f, 1.0f};
-	shininess=500.0;
-
-	// create geometry and VAO of the cylinder
-	amesh = createCylinder(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	// create geometry and VAO of the cone
-	amesh = createCone(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	// create geometry and VAO of the cube
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);*/
+	//cams[1].camPos[0] = 20;
+	//cams[1].camPos[1] = 0.01;
+	//cams[1].camPos[2] = 0.01;
+	//cams[1].type = 1;
 
 	float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
 	float diff_green[] = { 0.0f, 0.8f, 0.0f, 1.0f };
@@ -678,12 +596,12 @@ int main(int argc, char **argv) {
 
 
 //  Callback Registration
-	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
+	glutDisplayFunc(renderScene);
 
 
-	glutTimerFunc(0, refresh, 0);    //use it to to get 60 FPS whatever
 	glutTimerFunc(0, timer, 0);
+	glutTimerFunc(0, refresh, 0);    //use it to to get 60 FPS whatever
 	//glutIdleFunc(renderScene);  // Use it for maximum performance
 
 //	Mouse and Keyboard Callbacks
