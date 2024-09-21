@@ -15,54 +15,54 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AVTmathLib.cpp">
+    <ClCompile Include="src\AVTmathLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="basic_geometry.cpp">
+    <ClCompile Include="src\basic_geometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vsShaderLib.cpp">
+    <ClCompile Include="src\vsShaderLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Texture_Loader.cpp">
+    <ClCompile Include="src\Texture_Loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lightDemo.cpp">
+    <ClCompile Include="src\lightDemo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="avtFreeType.cpp">
+    <ClCompile Include="src\avtFreeType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="camera.cpp">
+    <ClCompile Include="src\camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AVTmathLib.h">
+    <ClInclude Include="include\AVTmathLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cube.h">
+    <ClInclude Include="include\cube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexAttrDef.h">
+    <ClInclude Include="include\VertexAttrDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vsShaderLib.h">
+    <ClInclude Include="include\vsShaderLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture_Loader.h">
+    <ClInclude Include="include\Texture_Loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="geometry.h">
+    <ClInclude Include="include\geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ft2build.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="avtFreeType.h">
+    <ClInclude Include="include\avtFreeType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="camera.h">
+    <ClInclude Include="include\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
