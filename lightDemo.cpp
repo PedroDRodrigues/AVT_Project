@@ -31,16 +31,16 @@
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
-
 #include "avtFreeType.h"
+
+// our classes
+#include "Camera.h"
 
 using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
-
-const float DEG2RAD = 3.14f / 180.0f;
 
 unsigned int FrameCount = 0;
 
@@ -77,22 +77,6 @@ float alpha = 39.0f, beta = 51.0f;
 float r = 10.0f;
 
 //camera declarations
-enum CameraType { PERSPECTIVE, ORTHOGONAL };
-class Camera {
-	public:
-		float camPos[3] = { 0.0f, 0.0f ,0.0f };
-		float camTarget[3] = { 0.0f, 0.0f ,0.0f };
-		CameraType type = PERSPECTIVE;
-
-	void updatePosition(float alpha, float beta, float r) {
-		camPos[0] = r * sin(alpha * DEG2RAD) * cos(beta * DEG2RAD);
-		camPos[2] = r * cos(alpha * DEG2RAD) * cos(beta * DEG2RAD);
-		camPos[1] = r * sin(beta * DEG2RAD);
-
-		glutPostRedisplay();
-	}
-};
-
 Camera cams[3];
 int activeCam = 2;
 
