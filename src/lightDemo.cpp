@@ -27,14 +27,15 @@
 #include <IL/il.h>
 
 // Use Very Simple Libs
+#include "include/geometry.h"
 #include "include/VSShaderlib.h"
 #include "include/AVTmathLib.h"
 #include "include/VertexAttrDef.h"
-#include "include/geometry.h"
 #include "include/avtFreeType.h"
 
 // our classes
-#include "include/Camera.h"
+#include "include/camera.h"
+#include "include/scenery.h"
 
 using namespace std;
 
@@ -50,9 +51,6 @@ VSShaderLib shaderText;  //render bitmap text
 
 //File with the font
 const string font_name = "fonts/arial.ttf";
-
-//Vector with meshes
-vector<struct MyMesh> myMeshes;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -85,32 +83,11 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
-float terrainSize = 20.0f;
-float waterSize = 10.0f;
-
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float randomBetween(float min, float max) {
-	random_device rd; // obtain a random number from hardware
-	mt19937 gen(rd()); // seed the generator
-	uniform_real_distribution<> dis(min, max); // define the range
-	return dis(gen);
-}
-
-pair<float, float> generateRandomPosition() {
-	float x, y;
-	while (true) {
-		x = randomBetween(-(terrainSize / 2 - 1), (terrainSize / 2 - 1));
-		y = randomBetween(-(terrainSize / 2 - 1), (terrainSize / 2 - 1));
-
-		if (!(x >= -(waterSize / 2 + 1) && x <= (waterSize / 2 + 1)
-			&& y >= -(waterSize / 2 + 1) && y <= (waterSize / 2 + 1))) {
-			break;
-		}
-	}
-	return make_pair(x, y);
-}
+float terrainSize = 40.0f;
+float waterSize = 20.0f;
 
 void timer(int value)
 {
@@ -495,67 +472,17 @@ void init()
 	// top view cameras
 
 	cams[0].camPos[0] = 0.01;
-	cams[0].camPos[1] = 20;
+	cams[0].camPos[1] = 30;
 	cams[0].camPos[2] = 0.01;
 	cams[0].type = ORTHOGONAL;
 
 	cams[1].camPos[0] = 0.01;
-	cams[1].camPos[1] = 20;
+	cams[1].camPos[1] = 30;
 	cams[1].camPos[2] = 0.01;
 
-	float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
-	float diff_green[] = { 0.0f, 0.8f, 0.0f, 1.0f };
-	float spec_green[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-	float emissive_green[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess_green = 20.0f;
-	int texcount_green = 0;
-
-	amesh = createQuad(terrainSize, terrainSize);
-	memcpy(amesh.mat.ambient, amb_green, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff_green, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec_green, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive_green, 4 * sizeof(float));
-	amesh.mat.shininess = shininess_green;
-	amesh.mat.texCount = texcount_green;
-	myMeshes.push_back(amesh);
-
-	float amb_lightblue[] = { 0.0f, 0.2f, 0.3f, 1.0f };
-	float diff_lightblue[] = { 0.4f, 0.6f, 0.8f, 1.0f };
-	float spec_lightblue[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-	float emissive_lightblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess_lightblue = 100.0f;
-	int texcount_lightblue = 0;
-
-	amesh = createQuad(waterSize, waterSize);
-	memcpy(amesh.mat.ambient, amb_lightblue, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff_lightblue, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec_lightblue, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive_lightblue, 4 * sizeof(float));
-	amesh.mat.shininess = shininess_lightblue;
-	amesh.mat.texCount = texcount_lightblue;
-	myMeshes.push_back(amesh);
-
-	float amb_beige[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-	float diff_beige[] = { 0.8f, 0.6f, 0.4f, 1.0f };
-	float spec_beige[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	float emissive_beige[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess_beige = 100.0f;
-	int texcount_beige = 0;
-
-	for (int i = 0; i < 10; i++) { // create 10 houses
-		amesh = createCube();
-		memcpy(amesh.mat.ambient, amb_beige, 4 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff_beige, 4 * sizeof(float));
-		memcpy(amesh.mat.specular, spec_beige, 4 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive_beige, 4 * sizeof(float));
-		amesh.mat.shininess = shininess_beige;
-		amesh.mat.texCount = texcount_beige;
-
-		pair<float, float> point = generateRandomPosition();
-		amesh.xPosition = point.first;
-		amesh.yPosition = point.second;
-		myMeshes.push_back(amesh);
-	}
+	createTerrainMesh(terrainSize);
+	createWaterMesh(waterSize);
+	createHouseMeshes(10, terrainSize, waterSize);
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
