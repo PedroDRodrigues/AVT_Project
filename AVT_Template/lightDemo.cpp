@@ -36,8 +36,6 @@
 
 using namespace std;
 
-void renderScene(void); // ACHO QUE NÃO É NECESSÁRIO
-	
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
@@ -96,7 +94,7 @@ class Camera {
 };
 
 Camera cams[3];
-int activeCam = 0;
+int activeCam = 2;
 
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
@@ -309,7 +307,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		case '1': // orthogonal top
 			printf("%s\n", "orthogonal top");
 			activeCam = 0;
-			//ortho(-10.0f, 10.0f, -10.0f / ratio, 10.0f / ratio, 0.1f, 1000.0f);
 			break;
 		case '2': // perspective top
 			printf("%s\n", "perspective top");
@@ -319,7 +316,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		case '3': // perspective follow
 			printf("%s\n", "perspective follow");
 			activeCam = 2;
-			//perspective(53.13f, ratio, 0.1f, 1000.0f);
 			break;
 
 		case 'c': 
@@ -342,6 +338,10 @@ void processKeys(unsigned char key, int xx, int yy)
 
 void processMouseButtons(int button, int state, int xx, int yy)
 {
+	if (activeCam != 2) {
+		return;
+	}
+
 	// start tracking the mouse
 	if (state == GLUT_DOWN)  {
 		startX = xx;
@@ -372,6 +372,9 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 void processMouseMotion(int xx, int yy)
 {
+	if (activeCam != 2) {
+		return;
+	}
 
 	int deltaX, deltaY;
 	float alphaAux, betaAux;
@@ -414,6 +417,9 @@ void processMouseMotion(int xx, int yy)
 }
 
 void mouseWheel(int wheel, int direction, int x, int y) {
+	if (activeCam != 2) {
+		return;
+	}
 
 	r += direction * 0.1f;
 	if (r < 0.1f)
@@ -502,15 +508,16 @@ void init()
 	// set the camera position based on its spherical coordinates
 	cams[activeCam].updatePosition(alpha, beta, r);
 
-	////top
-	//cams[0].camPos[0] = 20;
-	//cams[0].camPos[1] = 0.01;
-	//cams[0].camPos[2] = 0.01;
+	// top view cameras
 
-	//cams[1].camPos[0] = 20;
-	//cams[1].camPos[1] = 0.01;
-	//cams[1].camPos[2] = 0.01;
-	//cams[1].type = 1;
+	cams[0].camPos[0] = 0.01;
+	cams[0].camPos[1] = 20;
+	cams[0].camPos[2] = 0.01;
+	cams[0].type = ORTHOGONAL;
+
+	cams[1].camPos[0] = 0.01;
+	cams[1].camPos[1] = 20;
+	cams[1].camPos[2] = 0.01;
 
 	float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
 	float diff_green[] = { 0.0f, 0.8f, 0.0f, 1.0f };
@@ -582,7 +589,7 @@ void init()
 
 int main(int argc, char **argv) {
 
-//  GLUT initialization
+	//  GLUT initialization
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
 
@@ -595,7 +602,7 @@ int main(int argc, char **argv) {
 	WindowHandle = glutCreateWindow(CAPTION);
 
 
-//  Callback Registration
+	//  Callback Registration
 	glutReshapeFunc(changeSize);
 	glutDisplayFunc(renderScene);
 
@@ -604,17 +611,17 @@ int main(int argc, char **argv) {
 	glutTimerFunc(0, refresh, 0);    //use it to to get 60 FPS whatever
 	//glutIdleFunc(renderScene);  // Use it for maximum performance
 
-//	Mouse and Keyboard Callbacks
+	//	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc ( mouseWheel ) ;
 	
 
-//	return from main loop
+	//	return from main loop
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-//	Init GLEW
+	//	Init GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
 
