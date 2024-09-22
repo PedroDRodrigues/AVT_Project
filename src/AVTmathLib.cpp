@@ -175,6 +175,48 @@ void rotate(MatrixTypes aType, float angle, float x, float y, float z)
 	multMatrix(aType,mat);
 }
 
+void rotateAroundCenter(MatrixTypes aType, float angle, float centerX, float centerY, float centerZ, float x, float y, float z) {
+	float mat[16];
+	float v[3];
+
+	v[0] = x;
+	v[1] = y;
+	v[2] = z;
+
+	float radAngle = DegToRad(angle);
+	float co = cos(radAngle);
+	float si = sin(radAngle);
+	normalize(v);
+	float x2 = v[0] * v[0];
+	float y2 = v[1] * v[1];
+	float z2 = v[2] * v[2];
+
+	mat[0] = co + x2 * (1 - co);
+	mat[4] = v[0] * v[1] * (1 - co) - v[2] * si;
+	mat[8] = v[0] * v[2] * (1 - co) + v[1] * si;
+	mat[12] = 0.0f;
+
+	mat[1] = v[0] * v[1] * (1 - co) + v[2] * si;
+	mat[5] = co + y2 * (1 - co);
+	mat[9] = v[1] * v[2] * (1 - co) - v[0] * si;
+	mat[13] = 0.0f;
+
+	mat[2] = v[0] * v[2] * (1 - co) - v[1] * si;
+	mat[6] = v[1] * v[2] * (1 - co) + v[0] * si;
+	mat[10] = co + z2 * (1 - co);
+	mat[14] = 0.0f;
+
+	mat[3] = 0.0f;
+	mat[7] = 0.0f;
+	mat[11] = 0.0f;
+	mat[15] = 1.0f;
+
+	translate(aType, -centerX, -centerY, -centerZ);
+	multMatrix(aType, mat);
+	translate(aType, centerX, centerY, centerZ);
+}
+
+
 // gluLookAt implementation
 void lookAt(float xPos, float yPos, float zPos,
 					float xLook, float yLook, float zLook,

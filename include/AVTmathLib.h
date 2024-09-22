@@ -56,6 +56,15 @@
 		*/
 		void rotate(MatrixTypes aType, float angle, float x, float y, float z);
 
+		/** Similar to glTotate*.
+			*
+			* \param aType any value from MatrixTypes
+			* \param angle rotation angle in degrees
+			* \param centerX,centerY,centerZ center of rotation
+			* \param x,y,z rotation axis in degrees
+		*/
+		void rotateAroundCenter(MatrixTypes aType, float angle, float centerX, float centerY, float centerZ, float x, float y, float z);
+
 		/** Similar to glLoadIdentity.
 		  *
 		  * \param aType any value from MatrixTypes

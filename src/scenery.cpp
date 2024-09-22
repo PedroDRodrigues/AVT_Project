@@ -6,7 +6,7 @@
 
 using namespace std;
 
-vector<struct MyMesh> myMeshes;
+extern vector<struct MyMesh> myMeshes;
 
 void createTerrainMesh(float terrainSize) {
     MyMesh amesh;
@@ -25,6 +25,8 @@ void createTerrainMesh(float terrainSize) {
     memcpy(amesh.mat.emissive, emissive_green, 4 * sizeof(float));
     amesh.mat.shininess = shininess_green;
     amesh.mat.texCount = texcount_green;
+
+    amesh.name = "terrain";
 
     myMeshes.push_back(amesh);
 }
@@ -46,6 +48,8 @@ void createWaterMesh(float waterSize) {
     memcpy(amesh.mat.emissive, emissive_lightblue, 4 * sizeof(float));
     amesh.mat.shininess = shininess_lightblue;
     amesh.mat.texCount = texcount_lightblue;
+
+    amesh.name = "water";
 
     myMeshes.push_back(amesh);
 }
@@ -72,6 +76,8 @@ void createHouseMeshes(int numberOfHouses, float terrainSize, float waterSize) {
         std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize);
         amesh.xPosition = point.first;
         amesh.yPosition = point.second;
+
+        amesh.name = "house";
 
         myMeshes.push_back(amesh);
     }

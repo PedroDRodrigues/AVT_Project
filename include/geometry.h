@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <string>
 
 #define MAX_TEXTURES 8
 
@@ -30,6 +31,8 @@ struct MyMesh {
 
 		float xPosition;
 		float yPosition;
+
+		std::string name;
 	};
 
 MyMesh createCube();

@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <random>
+#include <chrono>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
@@ -36,6 +37,7 @@
 // our classes
 #include "include/camera.h"
 #include "include/scenery.h"
+#include "include/boat.h"
 
 using namespace std;
 
@@ -72,7 +74,7 @@ int startX, startY, tracking = 0;
 
 // Camera Spherical Coordinates
 float alpha = 39.0f, beta = 51.0f;
-float r = 10.0f;
+float r = 40.0f;
 
 //camera declarations
 Camera cams[3];
@@ -83,11 +85,21 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
+// array of meshes
+vector<struct MyMesh> myMeshes;
+
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
 float terrainSize = 40.0f;
 float waterSize = 20.0f;
+
+// boat object
+Boat boat = Boat();
+
+// time variables
+std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
+float deltaTime = 0.0f;
 
 void timer(int value)
 {
@@ -144,6 +156,10 @@ void changeSize(int w, int h) {
 
 void renderScene(void) {
 
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+	lastTime = currentTime;
+
 	GLint loc;
 
 	FrameCount++;
@@ -176,28 +192,34 @@ void renderScene(void) {
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < myMeshes.size(); i++) {
+
+		MyMesh currMesh = myMeshes[objId];
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		glUniform4fv(loc, 1, currMesh.mat.ambient);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		glUniform4fv(loc, 1, currMesh.mat.diffuse);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		glUniform4fv(loc, 1, currMesh.mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		glUniform1f(loc, currMesh.mat.shininess);
 
 		pushMatrix(MODEL);
-		if (i == 0) { // green floor
+		if (currMesh.name == "terrain") {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
-		else if (i == 1) { // blue water
+		else if (currMesh.name == "water") {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 			translate(MODEL, 0.0f, 0.0f, 0.005f);
 		}
-		else { // houses
-			translate(MODEL, myMeshes[objId].xPosition, 0.0f, myMeshes[objId].yPosition);
+		else if (currMesh.name == "boat") {
+			boat.render(MODEL, deltaTime);
+			boat.update(deltaTime);
+		}
+		else if (currMesh.name == "house") {
+			translate(MODEL, currMesh.xPosition, 0.0f, currMesh.yPosition);
 		}
 
 		// send matrices to OGL
@@ -208,9 +230,9 @@ void renderScene(void) {
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
+		glBindVertexArray(currMesh.vao);
 
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glDrawElements(currMesh.type, currMesh.numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
@@ -285,6 +307,13 @@ void processKeys(unsigned char key, int xx, int yy)
 		
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+
+		case 'a':
+			boat.paddleLeft();
+			break;
+		case 'd':
+			boat.paddleRight();
+			break;
 
 		case 27:
 			glutLeaveMainLoop();
@@ -483,6 +512,8 @@ void init()
 	createTerrainMesh(terrainSize);
 	createWaterMesh(waterSize);
 	createHouseMeshes(10, terrainSize, waterSize);
+
+	boat.createMesh();
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
