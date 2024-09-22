@@ -97,6 +97,9 @@ float waterSize = 20.0f;
 // boat object
 Boat boat = Boat();
 
+// to keep track of which keys are being pressed
+bool keyStates[256] = { false };
+
 // time variables
 std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
 float deltaTime = 0.0f;
@@ -215,7 +218,7 @@ void renderScene(void) {
 			translate(MODEL, 0.0f, 0.0f, 0.005f);
 		}
 		else if (currMesh.name == "boat") {
-			boat.render(MODEL, deltaTime);
+			boat.render(MODEL);
 			boat.update(deltaTime);
 		}
 		else if (currMesh.name == "house") {
@@ -286,6 +289,8 @@ void processKeys(unsigned char key, int xx, int yy)
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 	int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
 
+	keyStates[key] = true;
+
 	switch(key) {
 		case '1': // orthogonal top
 			printf("%s\n", "orthogonal top");
@@ -309,16 +314,25 @@ void processKeys(unsigned char key, int xx, int yy)
 		case 'n': glDisable(GL_MULTISAMPLE); break;
 
 		case 'a':
-			boat.paddleLeft();
+			if (keyStates['s']) boat.paddleBackwardLeft();
+			else boat.paddleLeft();
 			break;
 		case 'd':
-			boat.paddleRight();
+			if (keyStates['s']) boat.paddleBackwardRight();
+			else boat.paddleRight();
+			break;
+		case 'o':
+			boat.toggleTurboMode();
 			break;
 
 		case 27:
 			glutLeaveMainLoop();
 			break;
 	}
+}
+
+void releaseKey(unsigned char key, int xx, int yy) {
+	keyStates[key] = false;
 }
 
 // ------------------------------------------------------------
@@ -555,6 +569,7 @@ int main(int argc, char **argv) {
 
 	//	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
+	glutKeyboardUpFunc(releaseKey);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc ( mouseWheel ) ;

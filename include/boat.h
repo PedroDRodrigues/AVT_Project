@@ -9,41 +9,45 @@ struct MyMesh;
 
 class Boat {
 private:
-    std::array<float, 3> position;       // Boat's position in 3D space
-    std::array<float, 3> direction;      // Unit vector representing the boat's direction
+    std::array<float, 3> position;
+    std::array<float, 3> direction;
     std::array<float, 3> currentForward;
 
-    float speed;                         // Scalar representing the boat's current speed
-    float maxSpeed;                      // Maximum possible speed
-    float acceleration;                  // Acceleration applied when paddling
-    float deceleration;                  // Rate at which the speed decreases (inertia)
+    float speed;
+    float maxSpeed;
+    float acceleration;
+    float naturalDeceleration;
+    float paddleDeceleration;
+    bool turboMode;
     
     float currentAngle;
-    float rotationAngle;                 // Angle for direction change per stroke
+    float rotationAngle;
     
-    float paddleStrength;                // Strength of each paddle stroke
+    float paddleStrength;
 
     MyMesh mesh;
 
-    void applyAcceleration();            // Applies acceleration to the boat
-    void rotateY(float angle);           // Rotates the boat around the Y-axis
+    void applyAcceleration();
+    void applyDeceleration();
+    void rotateY(float angle);
 
 public:
     Boat();
 
-    void paddleLeft();                   // Paddle the boat to the left
-    void paddleRight();                  // Paddle the boat to the right
-    void invertPaddle();                 // Inverts the boat's direction
-    void adjustPaddleStrength(bool increase);  // Adjusts paddle strength
+    void paddleLeft();
+    void paddleRight();
+    void paddleBackwardLeft();
+    void paddleBackwardRight();
+    void toggleTurboMode();
 
-    void update(float deltaTime);        // Updates the boat's position based on speed and direction
+    void update(float deltaTime);
 
-    std::array<float, 3> getPosition() const;  // Returns the boat's current position
-    std::array<float, 3> getDirection() const; // Returns the boat's current direction
-    float getSpeed() const;                    // Returns the boat's current speed
+    std::array<float, 3> getPosition() const;
+    std::array<float, 3> getDirection() const;
+    float getSpeed() const;
 
-    void createMesh();               // Creates the boat's mesh
-    void render(MatrixTypes MODEL, float dt);     // Renders the boat
+    void createMesh();
+    void render(MatrixTypes MODEL);
 };
 
 #endif

@@ -25,7 +25,9 @@ Boat::Boat() {
     speed = 0.0f;
     maxSpeed = 10.0f;
     acceleration = 1.0f;
-    deceleration = 0.98f;
+    naturalDeceleration = 0.98f;
+    paddleDeceleration = 1.0f;
+    turboMode = false;
 
     rotationAngle = degToRad(2.0f);
 
@@ -36,6 +38,13 @@ void Boat::applyAcceleration() {
     speed += acceleration * paddleStrength;
     if (speed > maxSpeed) {
         speed = maxSpeed;
+    }
+}
+
+void Boat::applyDeceleration() {
+    speed -= paddleDeceleration * paddleStrength;
+    if (speed < -maxSpeed) {
+        speed = -maxSpeed;
     }
 }
 
@@ -62,24 +71,36 @@ void Boat::paddleRight() {
     applyAcceleration();
 }
 
-void Boat::invertPaddle() {
-    direction = { -direction[0], -direction[1], -direction[2] };
+void Boat::paddleBackwardLeft() {
+    rotateY(-rotationAngle);
+    applyDeceleration();
 }
 
-void Boat::adjustPaddleStrength(bool increase) {
-    if (increase) {
-        paddleStrength += 0.1f;
+void Boat::paddleBackwardRight() {
+    rotateY(rotationAngle);
+    applyDeceleration();
+}
+
+void Boat::toggleTurboMode() {
+    turboMode = !turboMode;
+    if (turboMode) {
+        acceleration *= 2;
+        paddleDeceleration *= 2;
+        rotationAngle *= 2;
+        paddleStrength *= 2;
     }
     else {
-        paddleStrength -= 0.1f;
-        if (paddleStrength < 0.1f) paddleStrength = 0.1f;
+        acceleration /= 2;
+        paddleDeceleration /= 2;
+        rotationAngle /= 2;
+        paddleStrength /= 2;
     }
 }
 
 void Boat::update(float deltaTime) {
-    if (speed > 0.0f) {
-        speed *= deceleration;
-        if (speed < 0.01f) speed = 0.0f;
+    if (speed != 0.0f) {
+        speed *= naturalDeceleration;
+        if (std::abs(speed) < 0.01f) speed = 0.0f;
     }
 
     for (int i = 0; i < 3; ++i) {
@@ -127,9 +148,8 @@ void Boat::createMesh() {
     mesh = amesh;
 }
 
-void Boat::render(MatrixTypes MODEL, float dt) {
+void Boat::render(MatrixTypes MODEL) {
     translate(MODEL, position[0], position[1], position[2]);
-    update(dt);
     float yaw = std::atan2(direction[0], direction[2]);
     rotate(MODEL, radToDeg(yaw), 0, 1, 0);
 }
