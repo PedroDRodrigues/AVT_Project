@@ -42,6 +42,9 @@
 
 using namespace std;
 
+#define NUM_POINT_LIGHTS 6
+#define NUM_SPOT_LIGHTS 2
+
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
@@ -67,14 +70,18 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;
+GLint lPos_uniformId[NUM_POINT_LIGHTS];
+GLint sPos_uniformId[NUM_SPOT_LIGHTS];
+GLint sDir_uniformId[NUM_SPOT_LIGHTS];
+GLint sCut_uniformId[NUM_SPOT_LIGHTS];
+GLint dPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
 
 // Camera Spherical Coordinates
-float alpha = 39.0f, beta = 51.0f;
+float camAlpha = 39.0f, camBeta = 51.0f;
 float r = 100.0f;
 
 //camera declarations
@@ -85,6 +92,23 @@ int activeCam = 2;
 long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
+
+float dirLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
+float pointLightsPos[NUM_POINT_LIGHTS][4]= { {-35.0f, 4.0f, -35.0f, 1.0f},
+					{-35.0f, 20.0f, -0.5f, 1.0f},
+					{-1.0f, 20.0f, -1.0f, 1.0f},
+					{1.0f, 20.0f, 1.0f, 1.0f},
+					{35.0f, 20.0f, 0.5f, 1.0f},
+					{1.5f, 20.0f, 1.5f, 1.0f}
+};
+float spotLightsPos[NUM_SPOT_LIGHTS][4] = { 
+	{0.3, 0.2, 0.9, 1.0f},
+	{- 0.3, 0.2, 0.9, 1.0f}
+};
+
+bool spot_trigger = true;
+bool point_trigger = true;
+bool direct_trigger = true;
 
 // array of meshes
 vector<struct MyMesh> myMeshes;
@@ -192,10 +216,66 @@ void renderScene(void) {
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
 	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
+	GLfloat pointlight_ambient[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+	GLfloat pointlight_diffuse[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+	GLfloat pointlight_specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+	float counter = 0;
 
-	//int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {		
+		multMatrixPoint(VIEW, pointLightsPos[i], res);   //lightPos definido em World Coord so is converted to eye space
+		glUniform4fv(lPos_uniformId[i], 1, res);
+
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.ambient").c_str()), (pointlight_ambient[0] + counter) * 0.1f, (pointlight_ambient[1] + counter) * 0.1f, (pointlight_ambient[2] + counter) * 0.1f, pointlight_ambient[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), (pointlight_diffuse[0] + counter), (pointlight_diffuse[1] + counter), (pointlight_diffuse[2] + counter), pointlight_diffuse[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.specular").c_str()), (pointlight_specular[0] + counter), (pointlight_specular[1] + counter), (pointlight_specular[2] + counter), pointlight_specular[3]);
+		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+		counter += 0.1f;
+		glLightfv(GL_LIGHT1 + i, GL_AMBIENT, pointlight_ambient);
+		glLightfv(GL_LIGHT1 + i, GL_DIFFUSE, pointlight_diffuse);
+		glLightfv(GL_LIGHT1 + i, GL_SPECULAR, pointlight_specular);
+		glLightfv(GL_LIGHT1 + i, GL_POSITION, pointLightsPos[i]);
+	}
+
+	GLfloat spotLights_ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	GLfloat spotLights_diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat spotLights_specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+		multMatrixPoint(VIEW, spotLightsPos[i], res);
+		glUniform4fv(sPos_uniformId[i], 1, res);
+
+		float res_aux[4] = { boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2], 1.0f };
+		multMatrixPoint(VIEW, /*boat.getDirection()*/ res_aux, res); // DANGER
+		glUniform4fv(sDir_uniformId[i], 1, res);
+		glUniform1f(sCut_uniformId[i], 0.2f);
+
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.ambient").c_str()), spotLights_ambient[0], spotLights_ambient[1], spotLights_ambient[2], spotLights_ambient[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), spotLights_diffuse[0], spotLights_diffuse[1], spotLights_diffuse[2], spotLights_diffuse[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.specular").c_str()), spotLights_specular[0], spotLights_specular[1], spotLights_specular[2], spotLights_specular[3]);
+		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+
+		glLightfv(GL_LIGHT2 + i, GL_AMBIENT, spotLights_ambient);
+		glLightfv(GL_LIGHT2 + i, GL_DIFFUSE, spotLights_diffuse);
+		glLightfv(GL_LIGHT2 + i, GL_SPECULAR, spotLights_specular);
+		glLightfv(GL_LIGHT2 + i, GL_POSITION, spotLightsPos[i]);
+	}
+
+	multMatrixPoint(VIEW, dirLightPos, res);
+	glUniform4fv(dPos_uniformId, 1, res);
+	GLfloat dirLight_ambient[4] = {0.3f, 0.24f, 0.14f, 1.0f};
+	GLfloat dirLight_diffuse[4] = {0.7f, 0.42f, 0.26f, 1.0f};
+	GLfloat dirLight_specular[4]= {0.5f, 0.5f, 0.5f, 1.0f};
+	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.ambient"), dirLight_ambient[0], dirLight_ambient[1], dirLight_ambient[2], dirLight_ambient[3]);
+	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.diffuse"), dirLight_diffuse[0], dirLight_diffuse[1], dirLight_diffuse[2], dirLight_diffuse[3]);
+	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.specular"), dirLight_specular[0], dirLight_specular[1], dirLight_specular[2], dirLight_specular[3]);
+	glUniform1f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.shininess"), 100.0f);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, dirLight_ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, dirLight_diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, dirLight_specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, dirLightPos);	
+	
+	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < myMeshes.size(); i++) {
 
@@ -340,22 +420,78 @@ void processKeys(unsigned char key, int xx, int yy)
 			activeCam = 2;
 			break;
 
-		case 'c': 
-			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-			break;
+		case 'C': 
+			printf("Camera Spherical Coordinates (%f, %f, %f)\n", camAlpha, camBeta, r);
+			
+			if (point_trigger == false) {
+				for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+					glEnable(GL_LIGHT1 + i);
+				}
+			
+				point_trigger = true;
+			}
 		
+			if (point_trigger == true) {
+				for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+					glDisable(GL_LIGHT1 + i);
+				}
+				
+				point_trigger = false;
+			}
+			break;
+		case 'H':
+			// toggle spot lights
+			if (spot_trigger == true) {
+				for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+					glDisable(GL_LIGHT2 + i);
+				}
+				spot_trigger = false;
+			}
+			else {
+				for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+					glEnable(GL_LIGHT2 + i);
+				}
+				spot_trigger = true;
+			}
+			break;
+		case 'N':
+			// toggle directional light - NIGHT MODE / DAY MODE
+			if (direct_trigger == true) {
+				glDisable(GL_LIGHT0);
+				direct_trigger = false;
+			}
+			else {
+				glEnable(GL_LIGHT0);
+				direct_trigger = true;
+			}
+			break;
+
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
 
-		case 'a':
+		case 'A':
 			if (keyStates['s']) boat.paddleBackwardLeft();
 			else boat.paddleLeft();
+			
+			cams[2].camPos[0] = - boat.getDirection()[0] * 10;
+			cams[2].camPos[1] = - boat.getDirection()[1] * 10 + 20;
+			cams[2].camPos[2] = - boat.getDirection()[2] * 10;
+			cams[2].camTarget[0] = boat.getPosition()[0];
+			cams[2].camTarget[1] = boat.getPosition()[1];
+			cams[2].camTarget[2] = boat.getPosition()[2];
 			break;
-		case 'd':
+		case 'D':
 			if (keyStates['s']) boat.paddleBackwardRight();
 			else boat.paddleRight();
+
+			cams[2].camPos[0] = - boat.getDirection()[0] * 10;
+			cams[2].camPos[1] = - boat.getDirection()[1] * 10 + 20;
+			cams[2].camPos[2] = - boat.getDirection()[2] * 10;
+			cams[2].camTarget[0] = boat.getPosition()[0];
+			cams[2].camTarget[1] = boat.getPosition()[1];
+			cams[2].camTarget[2] = boat.getPosition()[2];
 			break;
-		case 'o':
+		case 'O':
 			boat.toggleTurboMode();
 			break;
 
@@ -423,8 +559,8 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-		alphaAux = alpha + deltaX * rotationSensitivity;
-		betaAux = beta + deltaY * rotationSensitivity;
+		alphaAux = camAlpha + deltaX * rotationSensitivity;
+		betaAux = camBeta + deltaY * rotationSensitivity;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
@@ -434,8 +570,8 @@ void processMouseMotion(int xx, int yy)
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
-		alphaAux = alpha;
-		betaAux = beta;
+		alphaAux = camAlpha;
+		betaAux = camBeta;
 		rAux = r + (deltaY * zoomSensitivity);
 		if (rAux < 0.1f)
 			rAux = 0.1f;
@@ -446,8 +582,8 @@ void processMouseMotion(int xx, int yy)
 	// EXERCISE 2 - 2 : to orient the moving camera with the mouse movement and
 	//  simultaneously pressing its left key
 	if (tracking == 1) {
-		alpha = alphaAux;
-		beta = betaAux;
+		camAlpha = alphaAux;
+		camBeta = betaAux;
 	}
 
 	// uncomment this if not using an idle or refresh func
@@ -463,7 +599,7 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 	if (r < 0.1f)
 		r = 0.1f;
 
-	cams[activeCam].updatePosition(alpha, beta, r);
+	cams[activeCam].updatePosition(camAlpha, camBeta, r);
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
@@ -500,7 +636,16 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+		lPos_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].position").c_str());
+	}
+	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+		sPos_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].position").c_str());
+		sDir_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].direction").c_str());
+		sCut_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].cutoff").c_str());
+	}
+	dPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
@@ -544,7 +689,7 @@ void init()
 	freeType_init(font_name);
 
 	// set the camera position based on its spherical coordinates
-	cams[activeCam].updatePosition(alpha, beta, r);
+	cams[activeCam].updatePosition(camAlpha, camBeta, r);
 
 	// top view cameras
 
