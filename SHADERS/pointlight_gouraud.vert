@@ -111,7 +111,7 @@ void main() {
 	vec4 pos = m_viewModel * position;
 
 	vec3 normal = normalize(m_normal * normal.xyz);
-	vec lightDir = vec3(l_pos - pos);
+	vec3 lightDir = vec3(l_pos - pos);
 	vec3 eye = vec3(-pos);
 	
 	vec4 spec = vec4(0.0);
@@ -123,15 +123,15 @@ void main() {
 	DataOut.color = CalcDirLight(dirLight, n, e);
 
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
-		vec3 pl = vec3(pointLights[i].position - pos);
+		vec3 pl = vec3(pointLightsPos[i].position - pos);
 		vec3 pl2 = normalize(pl);
 		DataOut.color += CalcPointLight(pl2, n, e) / NUM_POINT_LIGHTS;
 	}
 
 	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
-		vec3 l = normalize(vec3(spotLights[i].position - pos));
-		vec3 s = normalize(-spotLights[i].direction); 
-		float cutoff = spotLights[i].cutoff;
+		vec3 l = normalize(vec3(spotLightsPos[i].position - pos));
+		vec3 s = normalize(-spotLightsPos[i].direction); 
+		float cutoff = spotLightsPos[i].cutoff;
 		DataOut.color += calcSpotLight(l, s, cutoff, n, e);
 	}
 

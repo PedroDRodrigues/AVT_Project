@@ -241,7 +241,9 @@ void renderScene(void) {
 	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
 		multMatrixPoint(VIEW, spotLightsPos[i], res);
 		glUniform4fv(sPos_uniformId[i], 1, res);
-		multMatrixPoint(VIEW, boat.getDirection(), res); // DANGER
+
+		float res_aux[4] = { boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2], 1.0f };
+		multMatrixPoint(VIEW, /*boat.getDirection()*/ res_aux, res); // DANGER
 		glUniform4fv(sDir_uniformId[i], 1, res);
 		glUniform1f(sCut_uniformId[i], 0.2f);
 
@@ -384,14 +386,56 @@ void processKeys(unsigned char key, int xx, int yy)
 			activeCam = 2;
 			break;
 
-		case 'c': 
+		case 'C': 
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-			break;
+			
+			if (point_trigger == false) {
+				for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+					glEnable(GL_LIGHT1 + i);
+				}
+			
+				point_trigger = true;
+			}
 		
+			if (point_trigger == true) {
+				for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+					glDisable(GL_LIGHT1 + i);
+				}
+				
+				point_trigger = false;
+			}
+			break;
+		case 'H':
+			// toggle spot lights
+			if (spot_trigger == true) {
+				for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+					glDisable(GL_LIGHT2 + i);
+				}
+				spot_trigger = false;
+			}
+			else {
+				for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+					glEnable(GL_LIGHT2 + i);
+				}
+				spot_trigger = true;
+			}
+			break;
+		case 'N':
+			// toggle directional light - NIGHT MODE / DAY MODE
+			if (direct_trigger == true) {
+				glDisable(GL_LIGHT0);
+				direct_trigger = false;
+			}
+			else {
+				glEnable(GL_LIGHT0);
+				direct_trigger = true;
+			}
+			break;
+
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
 
-		case 'a':
+		case 'A':
 			if (keyStates['s']) boat.paddleBackwardLeft();
 			else boat.paddleLeft();
 			
@@ -401,9 +445,8 @@ void processKeys(unsigned char key, int xx, int yy)
 			cams[2].camTarget[0] = boat.getPosition()[0];
 			cams[2].camTarget[1] = boat.getPosition()[1];
 			cams[2].camTarget[2] = boat.getPosition()[2];
-			
 			break;
-		case 'd':
+		case 'D':
 			if (keyStates['s']) boat.paddleBackwardRight();
 			else boat.paddleRight();
 
@@ -413,9 +456,8 @@ void processKeys(unsigned char key, int xx, int yy)
 			cams[2].camTarget[0] = boat.getPosition()[0];
 			cams[2].camTarget[1] = boat.getPosition()[1];
 			cams[2].camTarget[2] = boat.getPosition()[2];
-
 			break;
-		case 'o':
+		case 'O':
 			boat.toggleTurboMode();
 			break;
 
