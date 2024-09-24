@@ -21,7 +21,6 @@ private:
     float paddleDeceleration;
     bool turboMode;
     
-    float currentAngle;
     float rotationAngle;
     
     float paddleStrength;

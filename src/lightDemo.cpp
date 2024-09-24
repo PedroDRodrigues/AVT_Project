@@ -44,6 +44,7 @@ using namespace std;
 
 #define NUM_POINT_LIGHTS 6
 #define NUM_SPOT_LIGHTS 2
+#define DEG2RAD 3.14/180.0f
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 int WindowHandle = 0;
@@ -79,6 +80,9 @@ GLint tex_loc, tex_loc1, tex_loc2;
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
+bool mouseMovingWhilePressed = false;
+int lastMouseX = -1, lastMouseY = -1;
+int timeoutDuration = 50;
 
 // Camera Spherical Coordinates
 float camAlpha = 39.0f, camBeta = 51.0f;
@@ -299,19 +303,6 @@ void renderScene(void) {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 			translate(MODEL, 0.0f, 0.0f, 0.01f);
 		}
-		//else if (currMesh.name == "boat") {
-		//	printf("%s\n", "here");
-		//	boat.render(MODEL);
-		//	boat.update(deltaTime);
-
-		//	//std::array<float, 3> boatPosition = boat.getPosition();
-		//	//std::array<float, 3> boatDirection = boat.getDirection();
-		//	//cams[activeCam].followBoat(
-		//	//	boatPosition,
-		//	//	boatDirection,
-		//	//	activeCam != 2
-		//	//);
-		//}
 		else if (currMesh.name == "house") {
 			translate(MODEL, currMesh.xPosition, 0.0f, currMesh.yPosition);
 		}
@@ -341,6 +332,8 @@ void renderScene(void) {
 		if (currModel.name == "boat") {
 			boat.render(MODEL);
 			boat.update(deltaTime);
+			cams[activeCam].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, mouseMovingWhilePressed);
+			cams[2].computeCameraAngles();
 		}
 
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -439,6 +432,7 @@ void processKeys(unsigned char key, int xx, int yy)
 				point_trigger = false;
 			}
 			break;
+
 		case 'H':
 			// toggle spot lights
 			if (spot_trigger == true) {
@@ -454,6 +448,7 @@ void processKeys(unsigned char key, int xx, int yy)
 				spot_trigger = true;
 			}
 			break;
+
 		case 'N':
 			// toggle directional light - NIGHT MODE / DAY MODE
 			if (direct_trigger == true) {
@@ -469,28 +464,19 @@ void processKeys(unsigned char key, int xx, int yy)
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
 
+		case 'a':
 		case 'A':
 			if (keyStates['s']) boat.paddleBackwardLeft();
 			else boat.paddleLeft();
-			
-			cams[2].camPos[0] = - boat.getDirection()[0] * 10;
-			cams[2].camPos[1] = - boat.getDirection()[1] * 10 + 20;
-			cams[2].camPos[2] = - boat.getDirection()[2] * 10;
-			cams[2].camTarget[0] = boat.getPosition()[0];
-			cams[2].camTarget[1] = boat.getPosition()[1];
-			cams[2].camTarget[2] = boat.getPosition()[2];
 			break;
+
+		case 'd':
 		case 'D':
 			if (keyStates['s']) boat.paddleBackwardRight();
 			else boat.paddleRight();
-
-			cams[2].camPos[0] = - boat.getDirection()[0] * 10;
-			cams[2].camPos[1] = - boat.getDirection()[1] * 10 + 20;
-			cams[2].camPos[2] = - boat.getDirection()[2] * 10;
-			cams[2].camTarget[0] = boat.getPosition()[0];
-			cams[2].camTarget[1] = boat.getPosition()[1];
-			cams[2].camTarget[2] = boat.getPosition()[2];
 			break;
+
+		case 'o':
 		case 'O':
 			boat.toggleTurboMode();
 			break;
@@ -521,10 +507,11 @@ void processMouseButtons(int button, int state, int xx, int yy)
 		startX = xx;
 		startY = yy;
 
-		if (button == GLUT_LEFT_BUTTON)
+		if (button == GLUT_LEFT_BUTTON) {
 			tracking = 1;
-		else if (button == GLUT_RIGHT_BUTTON)
-			tracking = 2;
+		}
+		//else if (button == GLUT_RIGHT_BUTTON)
+		//	tracking = 2;
 	}
 
 	//stop tracking the mouse
@@ -546,64 +533,52 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 void processMouseMotion(int xx, int yy)
 {
+	mouseMovingWhilePressed = true;
+	lastMouseX = xx;
+	lastMouseY = yy;
+
 	if (activeCam != 2) {
 		return;
 	}
 
-	int deltaX, deltaY;
-	float alphaAux, betaAux;
-	float rAux;
-
-	deltaX = -(xx - startX);
-	deltaY = yy - startY;
-
-	// left mouse button: move camera
 	if (tracking == 1) {
-		alphaAux = camAlpha + deltaX * rotationSensitivity;
-		betaAux = camBeta + deltaY * rotationSensitivity;
+		int deltaX = -(xx - startX);
+		int deltaY = yy - startY;
 
-		if (betaAux > 85.0f)
-			betaAux = 85.0f;
-		else if (betaAux < -85.0f)
-			betaAux = -85.0f;
-		rAux = r;
+		float sensitivity = 0.05f;
+
+
+		cams[activeCam].yaw += deltaX * sensitivity;
+		cams[activeCam].pitch += deltaY * sensitivity;
+
+		if (cams[activeCam].pitch > 89.0f) cams[activeCam].pitch = 89.0f;
+		if (cams[activeCam].pitch < -89.0f) cams[activeCam].pitch = -89.0f;
+
+		std::array<float, 3> direction;
+		direction[0] = cos(DEG2RAD * cams[activeCam].yaw) * cos(DEG2RAD * cams[activeCam].pitch);
+		direction[1] = sin(DEG2RAD * cams[activeCam].pitch);
+		direction[2] = sin(DEG2RAD * cams[activeCam].yaw) * cos(DEG2RAD * cams[activeCam].pitch);
+
+		cams[activeCam].updateTarget(direction[0], direction[1], direction[2]);
+
+		startX = xx;
+		startY = yy;
 	}
-	// right mouse button: zoom
-	else if (tracking == 2) {
-		alphaAux = camAlpha;
-		betaAux = camBeta;
-		rAux = r + (deltaY * zoomSensitivity);
-		if (rAux < 0.1f)
-			rAux = 0.1f;
-	}
-
-	cams[activeCam].updatePosition(alphaAux, betaAux, rAux);
-
-	// EXERCISE 2 - 2 : to orient the moving camera with the mouse movement and
-	//  simultaneously pressing its left key
-	if (tracking == 1) {
-		camAlpha = alphaAux;
-		camBeta = betaAux;
-	}
-
-	// uncomment this if not using an idle or refresh func
-	// glutPostRedisplay();
 }
 
-void mouseWheel(int wheel, int direction, int x, int y) {
-	if (activeCam != 2) {
-		return;
+void checkMouseStopped(int value) {
+	static int lastCheckX = -1, lastCheckY = -1;
+
+	if (lastMouseX == lastCheckX && lastMouseY == lastCheckY && !tracking) {
+		mouseMovingWhilePressed = false;
 	}
 
-	r += direction * 0.1f;
-	if (r < 0.1f)
-		r = 0.1f;
+	lastCheckX = lastMouseX;
+	lastCheckY = lastMouseY;
 
-	cams[activeCam].updatePosition(camAlpha, camBeta, r);
-
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+	glutTimerFunc(timeoutDuration, checkMouseStopped, 0);
 }
+
 
 // --------------------------------------------------------
 //
@@ -689,24 +664,27 @@ void init()
 	freeType_init(font_name);
 
 	// set the camera position based on its spherical coordinates
-	cams[activeCam].updatePosition(camAlpha, camBeta, r);
+	//cams[activeCam].updatePosition(camAlpha, camBeta, r);
 
 	// top view cameras
 
-	cams[0].camPos[0] = 0.01;
-	cams[0].camPos[1] = 30;
-	cams[0].camPos[2] = 0.01;
+	cams[0].camPos[0] = 0.01f;
+	cams[0].camPos[1] = 100.0f;
+	cams[0].camPos[2] = 0.01f;
 	cams[0].type = ORTHOGONAL;
 
-	cams[1].camPos[0] = 0.01;
-	cams[1].camPos[1] = 30;
-	cams[1].camPos[2] = 0.01;
+	cams[1].camPos[0] = 0.01f;
+	cams[1].camPos[1] = 100.0f;
+	cams[1].camPos[2] = 0.01f;
 
 	createTerrainMesh(terrainSize);
 	createWaterMesh(waterSize);
 	createHouseMeshes(50, terrainSize, waterSize);
 
 	boat.createMesh();
+
+	cams[2].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, tracking == 1);
+	cams[2].computeCameraAngles();
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
@@ -751,7 +729,8 @@ int main(int argc, char **argv) {
 	glutKeyboardUpFunc(releaseKey);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
-	glutMouseWheelFunc ( mouseWheel ) ;
+	glutTimerFunc(timeoutDuration, checkMouseStopped, 0);
+	//glutMouseWheelFunc ( mouseWheel ) ;
 	
 
 	//	return from main loop

@@ -19,8 +19,6 @@ using std::vector;
 
 extern vector<struct MyModel> myModels;
 
-#define DEG2RAD 3.14f/180.0f
-
 Boat::Boat() {
     position = { 0.0f, 10.0f, 0.0f };
     direction = { 0.0f, 0.0f, 1.0f };
@@ -34,7 +32,6 @@ Boat::Boat() {
     turboMode = false;
 
     rotationAngle = degToRad(2.0f);
-
     paddleStrength = 1.0f;
 }
 

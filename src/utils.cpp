@@ -58,3 +58,11 @@ float radToDeg(float radians)
 {
 	return (float)(radians * (180.0f / M_PI));
 };
+
+std::array<float, 3> lerpPosition(const std::array<float, 3>& start, const std::array<float, 3>& end, float t) {
+	return {
+		start[0] + t * (end[0] - start[0]),
+		start[1] + t * (end[1] - start[1]),
+		start[2] + t * (end[2] - start[2])
+	};
+};
