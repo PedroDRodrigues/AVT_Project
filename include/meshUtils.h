@@ -2,10 +2,21 @@
 #ifndef MESHUTILS_H
 #define MESHUTILS_H
 
-struct Vertex {
-    float x, y, z;
+#include <assimp/scene.h>
+#include <GL/glew.h>
+#include <string>
+
+using namespace std;
+
+struct MyModel {
+    GLuint VAO;
+    GLuint VBO;
+    GLuint EBO;
+    unsigned int indexCount;
+    string name;
 };
 
-void calculateMeshCenter(Vertex* vertices, int numVertices, float& centerX, float& centerY, float& centerZ);
+MyModel loadModel(const std::string& path);
+MyModel processModel(aiMesh* mesh);
 
 #endif

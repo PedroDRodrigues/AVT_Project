@@ -104,5 +104,7 @@
     <None Include="shaders\text.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\..\..\..\..\Blender stuff\avtProject\canoe.glb" />
+    <None Include="models\boat.glb" />
   </ItemGroup>
 </Project>

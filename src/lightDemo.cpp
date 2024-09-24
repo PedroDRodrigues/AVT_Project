@@ -33,6 +33,7 @@
 #include "include/AVTmathLib.h"
 #include "include/VertexAttrDef.h"
 #include "include/avtFreeType.h"
+#include "include/meshUtils.h"
 
 // our classes
 #include "include/camera.h"
@@ -74,7 +75,7 @@ int startX, startY, tracking = 0;
 
 // Camera Spherical Coordinates
 float alpha = 39.0f, beta = 51.0f;
-float r = 40.0f;
+float r = 100.0f;
 
 //camera declarations
 Camera cams[3];
@@ -87,12 +88,13 @@ float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 // array of meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyModel> myModels;
 
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float terrainSize = 40.0f;
-float waterSize = 20.0f;
+float terrainSize = 100.0f;
+float waterSize = 70.0f;
 
 // boat object
 Boat boat = Boat();
@@ -193,11 +195,11 @@ void renderScene(void) {
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
 
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+	//int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < myMeshes.size(); i++) {
 
-		MyMesh currMesh = myMeshes[objId];
+		MyMesh currMesh = myMeshes[i];
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -215,12 +217,21 @@ void renderScene(void) {
 		}
 		else if (currMesh.name == "water") {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
-			translate(MODEL, 0.0f, 0.0f, 0.005f);
+			translate(MODEL, 0.0f, 0.0f, 0.01f);
 		}
-		else if (currMesh.name == "boat") {
-			boat.render(MODEL);
-			boat.update(deltaTime);
-		}
+		//else if (currMesh.name == "boat") {
+		//	printf("%s\n", "here");
+		//	boat.render(MODEL);
+		//	boat.update(deltaTime);
+
+		//	//std::array<float, 3> boatPosition = boat.getPosition();
+		//	//std::array<float, 3> boatDirection = boat.getDirection();
+		//	//cams[activeCam].followBoat(
+		//	//	boatPosition,
+		//	//	boatDirection,
+		//	//	activeCam != 2
+		//	//);
+		//}
 		else if (currMesh.name == "house") {
 			translate(MODEL, currMesh.xPosition, 0.0f, currMesh.yPosition);
 		}
@@ -239,7 +250,30 @@ void renderScene(void) {
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
-		objId++;
+		//objId++;
+	}
+
+	for (int i = 0; i < myModels.size(); i++) {
+		MyModel currModel = myModels[i];
+
+		pushMatrix(MODEL);
+
+		if (currModel.name == "boat") {
+			boat.render(MODEL);
+			boat.update(deltaTime);
+		}
+
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		glBindVertexArray(currModel.VAO);
+		glDrawElements(GL_TRIANGLES, currModel.indexCount, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
 	}
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -525,7 +559,7 @@ void init()
 
 	createTerrainMesh(terrainSize);
 	createWaterMesh(waterSize);
-	createHouseMeshes(10, terrainSize, waterSize);
+	createHouseMeshes(50, terrainSize, waterSize);
 
 	boat.createMesh();
 

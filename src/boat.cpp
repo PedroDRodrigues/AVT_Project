@@ -1,3 +1,7 @@
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include "include/Boat.h"
 #include "include/geometry.h"
 #include "include/meshUtils.h"
@@ -13,12 +17,12 @@
 
 using std::vector;
 
-extern vector<struct MyMesh> myMeshes;
+extern vector<struct MyModel> myModels;
 
 #define DEG2RAD 3.14f/180.0f
 
 Boat::Boat() {
-    position = { 0.0f, 0.0f, 0.0f };
+    position = { 0.0f, 10.0f, 0.0f };
     direction = { 0.0f, 0.0f, 1.0f };
     currentForward = { 0.0f, 0.0f, 1.0f };
 
@@ -121,31 +125,10 @@ float Boat::getSpeed() const {
 }
 
 void Boat::createMesh() {
-    MyMesh amesh;
-
-    float amb[] = { 0.1f, 0.05f, 0.02f, 1.0f };
-    float diff[] = { 0.3f, 0.15f, 0.05f, 1.0f };
-    float spec[] = { 0.2f, 0.1f, 0.05f, 1.0f };
-    float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float shininess = 100.0f;
-    int texcount = 0;
-
-    amesh = createCube();
-    memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-    memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-    memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-    memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-    amesh.mat.shininess = shininess;
-    amesh.mat.texCount = texcount;
-
-    amesh.xPosition = 0;
-    amesh.yPosition = 0;
-
-    amesh.name = "boat";
-
-    myMeshes.push_back(amesh);
-
-    mesh = amesh;
+    MyModel model = loadModel("models/boat.glb");
+    model.name = "boat";
+    myModels.push_back(model);
+    mesh = model;
 }
 
 void Boat::render(MatrixTypes MODEL) {
@@ -153,3 +136,4 @@ void Boat::render(MatrixTypes MODEL) {
     float yaw = std::atan2(direction[0], direction[2]);
     rotate(MODEL, radToDeg(yaw), 0, 1, 0);
 }
+

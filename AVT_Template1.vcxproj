@@ -185,7 +185,9 @@
     <ClInclude Include="include\vsShaderLib.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\..\..\..\Blender stuff\avtProject\canoe.glb" />
     <None Include="Dependencies.exe" />
+    <None Include="models\boat.glb" />
     <None Include="shaders\pointlight.frag" />
     <None Include="shaders\pointlight.vert" />
     <None Include="shaders\text.frag" />

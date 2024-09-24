@@ -4,6 +4,7 @@
 #include <array>
 #include "include/AVTmathLib.h"
 #include "include/geometry.h"
+#include "include/meshUtils.h"
 
 struct MyMesh;
 
@@ -25,7 +26,7 @@ private:
     
     float paddleStrength;
 
-    MyMesh mesh;
+    MyModel mesh;
 
     void applyAcceleration();
     void applyDeceleration();

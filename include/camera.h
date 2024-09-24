@@ -4,6 +4,9 @@
 
 #include <cmath>
 #include <GL/glut.h>
+#include "array"
+
+using namespace std;
 
 enum CameraType { PERSPECTIVE, ORTHOGONAL };
 
@@ -15,6 +18,7 @@ public:
 
     Camera();
     void updatePosition(float alpha, float beta, float r);
+    void followBoat(std::array<float, 3> boatPosition, std::array<float, 3> boatDirection, bool topCamera);
 };
 
 #endif
