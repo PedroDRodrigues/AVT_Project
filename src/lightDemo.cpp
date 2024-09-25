@@ -59,6 +59,19 @@ VSShaderLib shaderText;  //render bitmap text
 //File with the font
 const string font_name = "fonts/arial.ttf";
 
+// array of meshes
+vector<struct MyMesh> myMeshes;
+vector<struct MyModel> myModels;
+
+float rotationSensitivity = 0.01f;
+float zoomSensitivity = 0.10f;
+
+float terrainSize = 100.0f;
+float waterSize = 70.0f;
+
+// boat object
+Boat boat = Boat();
+
 //External array storage defined in AVTmathLib.cpp
 
 /// The storage for matrices
@@ -95,10 +108,10 @@ int activeCam = 2;
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
-float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
+//float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 float dirLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
-float pointLightsPos[NUM_POINT_LIGHTS][4]= { {-35.0f, 4.0f, -35.0f, 1.0f},
+float pointLightsPos[NUM_POINT_LIGHTS][4]= { {0.0f, 4.0f, 0.0f, 1.0f},
 					{-35.0f, 20.0f, -0.5f, 1.0f},
 					{-1.0f, 20.0f, -1.0f, 1.0f},
 					{1.0f, 20.0f, 1.0f, 1.0f},
@@ -106,26 +119,13 @@ float pointLightsPos[NUM_POINT_LIGHTS][4]= { {-35.0f, 4.0f, -35.0f, 1.0f},
 					{1.5f, 20.0f, 1.5f, 1.0f}
 };
 float spotLightsPos[NUM_SPOT_LIGHTS][4] = { 
-	{0.3, 0.2, 0.9, 1.0f},
-	{- 0.3, 0.2, 0.9, 1.0f}
+	{boat.getPosition()[0] + 0.3, boat.getPosition()[1] + 0.2, boat.getPosition()[2] + 0.9, 1.0f},
+	{boat.getPosition()[0] - 0.3, boat.getPosition()[1] + 0.2, boat.getPosition()[2] + 0.9, 1.0f}
 };
 
 bool spot_trigger = true;
 bool point_trigger = true;
 bool direct_trigger = true;
-
-// array of meshes
-vector<struct MyMesh> myMeshes;
-vector<struct MyModel> myModels;
-
-float rotationSensitivity = 0.01f;
-float zoomSensitivity = 0.10f;
-
-float terrainSize = 100.0f;
-float waterSize = 70.0f;
-
-// boat object
-Boat boat = Boat();
 
 // to keep track of which keys are being pressed
 bool keyStates[256] = { false };
@@ -226,7 +226,7 @@ void renderScene(void) {
 	float counter = 0;
 
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {		
-		multMatrixPoint(VIEW, pointLightsPos[i], res);   //lightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, pointLightsPos[i], res);   //light position in eye coordinates
 		glUniform4fv(lPos_uniformId[i], 1, res);
 
 		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.ambient").c_str()), (pointlight_ambient[0] + counter) * 0.1f, (pointlight_ambient[1] + counter) * 0.1f, (pointlight_ambient[2] + counter) * 0.1f, pointlight_ambient[3]);
@@ -267,7 +267,7 @@ void renderScene(void) {
 	multMatrixPoint(VIEW, dirLightPos, res);
 	glUniform4fv(dPos_uniformId, 1, res);
 	GLfloat dirLight_ambient[4] = {0.3f, 0.24f, 0.14f, 1.0f};
-	GLfloat dirLight_diffuse[4] = {0.7f, 0.42f, 0.26f, 1.0f};
+	GLfloat dirLight_diffuse[4] = {0.7f, 0.45f, 0.30f, 1.0f};
 	GLfloat dirLight_specular[4]= {0.5f, 0.5f, 0.5f, 1.0f};
 	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.ambient"), dirLight_ambient[0], dirLight_ambient[1], dirLight_ambient[2], dirLight_ambient[3]);
 	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.diffuse"), dirLight_diffuse[0], dirLight_diffuse[1], dirLight_diffuse[2], dirLight_diffuse[3]);
@@ -689,6 +689,16 @@ void init()
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+
+	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+		glEnable(GL_LIGHT1 + i);
+	}
+	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+		glEnable(GL_LIGHT2 + i);
+	}
+
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
