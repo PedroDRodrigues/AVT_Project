@@ -7,6 +7,7 @@
 using namespace std;
 
 extern vector<struct MyMesh> myMeshes;
+const float PI = 3.14159f;
 
 void createTerrainMesh(float terrainSize) {
     MyMesh amesh;
@@ -75,9 +76,41 @@ void createHouseMeshes(int numberOfHouses, float terrainSize, float waterSize) {
 
         std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize);
         amesh.xPosition = point.first;
-        amesh.yPosition = point.second;
+        amesh.zPosition = point.second;
 
         amesh.name = "house";
+
+        myMeshes.push_back(amesh);
+    }
+}
+
+void createCreatures(int numberOfCreatures, float radius) {
+    MyMesh amesh;
+
+    float amb_darkblue[] = { 0.02f, 0.02f, 0.1f, 1.0f };
+    float diff_darkblue[] = { 0.1f, 0.1f, 0.5f, 1.0f };
+    float spec_darkblue[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    float emissive_darkblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float shininess_darkblue = 20.0f;
+    int texcount_darkblue = 0;
+
+    for (int i = 0; i < numberOfCreatures; i++) {
+        float angle = randomFloat(0, 2 * PI);
+        float x = radius * cos(angle);
+        float z = radius * sin(angle);
+
+        amesh = createSphere(1, 32);
+        memcpy(amesh.mat.ambient, amb_darkblue, 4 * sizeof(float));
+        memcpy(amesh.mat.diffuse, diff_darkblue, 4 * sizeof(float));
+        memcpy(amesh.mat.specular, spec_darkblue, 4 * sizeof(float));
+        memcpy(amesh.mat.emissive, emissive_darkblue, 4 * sizeof(float));
+        amesh.mat.shininess = shininess_darkblue;
+        amesh.mat.texCount = texcount_darkblue;
+
+        amesh.xPosition = x;
+        amesh.zPosition = z;
+
+        amesh.name = "creature";
 
         myMeshes.push_back(amesh);
     }

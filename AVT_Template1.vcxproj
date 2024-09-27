@@ -162,6 +162,7 @@
     <ClCompile Include="src\basic_geometry.cpp" />
     <ClCompile Include="src\boat.cpp" />
     <ClCompile Include="src\camera.cpp" />
+    <ClCompile Include="src\creature.cpp" />
     <ClCompile Include="src\lightDemo.cpp" />
     <ClCompile Include="src\meshUtils.cpp" />
     <ClCompile Include="src\scenery.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="include\AVTmathLib.h" />
     <ClInclude Include="include\boat.h" />
     <ClInclude Include="include\camera.h" />
+    <ClInclude Include="include\creature.h" />
     <ClInclude Include="include\cube.h" />
     <ClInclude Include="ft2build.h" />
     <ClInclude Include="include\geometry.h" />

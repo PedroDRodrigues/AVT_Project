@@ -16,5 +16,6 @@ void normalize(std::array<float, 3>& vec);
 float degToRad(float degrees);
 float radToDeg(float radians);
 std::array<float, 3> lerpPosition(const std::array<float, 3>& start, const std::array<float, 3>& end, float t);
+float randomFloat(float min, float max);
 
 #endif

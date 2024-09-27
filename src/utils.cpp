@@ -28,6 +28,10 @@ pair<float, float> generateRandomPosition(float sizeA, float sizeB) {
 	return make_pair(x, y);
 }
 
+float randomFloat(float min, float max) {
+	return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+}
+
 std::array<float, 3> cross(const std::array<float, 3>& a, const std::array<float, 3>& b) {
 	return {
 		a[1] * b[2] - a[2] * b[1],
