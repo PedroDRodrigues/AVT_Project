@@ -31,6 +31,7 @@ struct MyMesh {
 
 		float xPosition;
 		float yPosition;
+		float zPosition;
 
 		std::string name;
 	};
