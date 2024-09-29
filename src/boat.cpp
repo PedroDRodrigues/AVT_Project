@@ -17,8 +17,6 @@
 
 using std::vector;
 
-extern vector<struct MyModel> myModels;
-
 Boat::Boat() {
     position = { 0.0f, 10.0f, 0.0f };
     direction = { 0.0f, 0.0f, 1.0f };
@@ -121,11 +119,11 @@ float Boat::getSpeed() const {
     return speed;
 }
 
-void Boat::createMesh() {
+MyModel Boat::createMesh() {
     MyModel model = loadModel("models/boat.glb");
     model.name = "boat";
-    myModels.push_back(model);
     mesh = model;
+    return model;
 }
 
 void Boat::render(MatrixTypes MODEL) {

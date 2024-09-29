@@ -46,7 +46,7 @@ public:
     std::array<float, 3> getDirection() const;
     float getSpeed() const;
 
-    void createMesh();
+    MyModel createMesh();
     void render(MatrixTypes MODEL);
 };
 

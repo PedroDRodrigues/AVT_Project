@@ -19,22 +19,24 @@ struct Material{
 };
 // A model can be made of many meshes. Each is stored  in the following structure
 struct MyMesh {
-		GLuint vao;
-		GLuint texUnits[MAX_TEXTURES];
-		texType texTypes[4];
-		float transform[16];
-		float max_pos_vert[3];
-		float min_pos_vert[3];
-		GLuint numIndexes;
-		unsigned int type;
-		struct Material mat;
+	virtual ~MyMesh() {}
 
-		float xPosition;
-		float yPosition;
-		float zPosition;
+	GLuint vao;
+	GLuint texUnits[MAX_TEXTURES];
+	texType texTypes[4];
+	float transform[16];
+	float max_pos_vert[3];
+	float min_pos_vert[3];
+	GLuint numIndexes;
+	unsigned int type;
+	struct Material mat;
 
-		std::string name;
-	};
+	float xPosition;
+	float yPosition;
+	float zPosition;
+
+	std::string name;
+};
 
 MyMesh createCube();
 MyMesh createQuad(float size_x, float size_y);

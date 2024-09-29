@@ -179,6 +179,8 @@
     <ClInclude Include="include\cube.h" />
     <ClInclude Include="ft2build.h" />
     <ClInclude Include="include\geometry.h" />
+    <ClInclude Include="include\globals.h" />
+    <ClInclude Include="include\lightDemo.h" />
     <ClInclude Include="include\meshUtils.h" />
     <ClInclude Include="include\scenery.h" />
     <ClInclude Include="include\Texture_Loader.h" />

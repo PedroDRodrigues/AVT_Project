@@ -5,11 +5,8 @@
 #include "include/geometry.h"
 #include <vector>
 
-void createTerrainMesh(float terrainSize);
-void createWaterMesh(float waterSize);
-void createHouseMeshes(int numberOfHouses, float terrainSize, float waterSize);
-void createCreatures(int numberOfCreatures, float radius);
-
-extern std::vector<MyMesh> myMeshes;
+MyMesh createTerrainMesh(float terrainSize);
+MyMesh createWaterMesh(float waterSize);
+vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float waterSize);
 
 #endif

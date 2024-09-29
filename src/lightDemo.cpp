@@ -40,6 +40,8 @@
 #include "include/scenery.h"
 #include "include/boat.h"
 #include "include/creature.h"
+#include "include/globals.h"
+#include "include/utils.h"
 
 using namespace std;
 
@@ -63,12 +65,13 @@ const string font_name = "fonts/arial.ttf";
 // array of meshes
 vector<struct MyMesh> myMeshes;
 vector<struct MyModel> myModels;
+vector<struct Creature> creatures;
 
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float terrainSize = 100.0f;
-float waterSize = 70.0f;
+float terrainSize = 1000.0f;
+float waterSize = 700.0f;
 
 // boat object
 Boat boat = Boat();
@@ -128,67 +131,24 @@ bool spot_trigger = true;
 bool point_trigger = true;
 bool direct_trigger = true;
 
-// creatures
-std::vector<Creature> creatures;
-const int numCreatures = 20;
-const float radius = 30.0f;
-const float maxDistance = 100.0f; // max distance before respawning
-const float initialSpeed = 0.05f;
-const float speedIncreaseTime = 30.0f; // increase speed every 30 seconds
-const float shakeAmplitude = 0.1f;
-float globalTime = 0.0f; // timer related variables
-float speedMultiplier = 1.0f;
-
 // to keep track of which keys are being pressed
 bool keyStates[256] = { false };
 
 // time variables
 std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
 float deltaTime = 0.0f;
-
-
-// CREATURE FUNCTIONS
-
-//void initCreatures() {
-//	creatures.clear();
-//	for (int i = 0; i < numCreatures; ++i) {
-//		creatures.push_back(createCreature(radius, initialSpeed));
-//	}
-//}
-
-//void updateCreatures() {
-//	for (auto& creature : creatures) {
-//		// update position based on direction and speed
-//		creature.x += creature.vx * creature.speed * speedMultiplier;
-//		creature.y += creature.vy * creature.speed * speedMultiplier;
-//		creature.z += creature.vz * creature.speed * speedMultiplier;
-//
-//		// if creature goes too far from the center, respawn it
-//		float dist = sqrt(creature.x * creature.x + creature.z * creature.z);
-//		if (dist > maxDistance) {
-//			creature = createCreature(radius, initialSpeed);
-//		}
-//	}
-//}
-
-//void applyShakeAnimation(float time) {
-//	for (auto& creature : creatures) {
-//		creature.y += shakeAmplitude * sin(time * 5.0f); // vertical shake based on time
-//	}
-//}
+float seconds = 0.0f;
 
 // --------------------------
 
 void timer(int value)
 {
-	// creature timer
-	globalTime += 0.016f;
-	if (globalTime > speedIncreaseTime) {
-		speedMultiplier += 0.1f;  // increase speed by 10%
-		globalTime = 0.0f;        // reset timer
-	}
-	//updateCreatures();
-	//applyShakeAnimation(globalTime);
+	//// creature timer
+	//globalTime += 0.016f;
+	//if (globalTime > creatureSpeedIncreaseTime) {
+	//	creatureSpeedMultiplier += 0.1f;  // increase speed by 10%
+	//	globalTime = 0.0f;        // reset timer
+	//}
 
 	std::ostringstream oss;
 	oss << CAPTION << ": " << FrameCount << " FPS @ (" << WinX << "x" << WinY << ")";
@@ -246,6 +206,19 @@ void renderScene(void) {
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
 	lastTime = currentTime;
+
+	seconds += deltaTime;
+
+	bool isTimeMultipleOfSpeedIncrease = isApproximatelyMultipleOf(seconds, creatureSpeedIncreaseTime, 0.1f);
+	if (isTimeMultipleOfSpeedIncrease
+		&& creatureSpeedIncreaseAllowed
+		&& !(creatureSpeedMultiplier > creatureMaxSpeedMultiplier)) {
+		creatureSpeedMultiplier += 0.5f;
+	}
+
+	// make sure speed is only increased once whenever [creatureSpeedIncreaseTime] seconds passes
+	if (isTimeMultipleOfSpeedIncrease) creatureSpeedIncreaseAllowed = false;
+	else creatureSpeedIncreaseAllowed = true;
 
 	GLint loc;
 
@@ -358,20 +331,7 @@ void renderScene(void) {
 			translate(MODEL, 0.0f, 0.0f, 0.05f);
 		}
 		else if (currMesh.name == "house") {
-			translate(MODEL, currMesh.xPosition, 0.0f, currMesh.zPosition);
-		}
-		else if (currMesh.name == "creature") {
-			translate(
-				MODEL,
-				currMesh.xPosition * initialSpeed * speedMultiplier,
-				0.0f,
-				currMesh.zPosition * initialSpeed * speedMultiplier
-			);
-
-			float dist = sqrt(currMesh.xPosition * currMesh.xPosition + currMesh.zPosition * currMesh.zPosition);
-			if (dist > maxDistance) {
-				createCreatures(1, radius);
-			}
+			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
 		}
 
 		// send matrices to OGL
@@ -388,7 +348,6 @@ void renderScene(void) {
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
-		//objId++;
 	}
 
 	for (int i = 0; i < myModels.size(); i++) {
@@ -416,8 +375,41 @@ void renderScene(void) {
 		popMatrix(MODEL);
 	}
 
-	for (const auto& creature : creatures) {
-		renderCreature(creature);
+	for (int i = 0; i < creatures.size(); i++) {
+		Creature& currCreature = creatures[i];
+
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, currCreature.mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, currCreature.mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, currCreature.mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, currCreature.mat.shininess);
+
+		currCreature.update(deltaTime, creatureSpeedMultiplier, creatureMaxDistance, creatureRadius);
+		currCreature.applyShakeAnimation(seconds, creatureShakeAmplitude);
+
+		pushMatrix(MODEL);
+
+		translate(
+			MODEL,
+			currCreature.x,
+			currCreature.y,
+			currCreature.z
+		);
+
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		glBindVertexArray(currCreature.vao);
+		glDrawElements(GL_TRIANGLES, currCreature.numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
 	}
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -734,9 +726,6 @@ void init()
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
 
-	// set the camera position based on its spherical coordinates
-	//cams[activeCam].updatePosition(camAlpha, camBeta, r);
-
 	// top view cameras
 
 	cams[0].camPos[0] = 0.01f;
@@ -748,17 +737,23 @@ void init()
 	cams[1].camPos[1] = 100.0f;
 	cams[1].camPos[2] = 0.01f;
 
-	createTerrainMesh(terrainSize);
-	createWaterMesh(waterSize);
-	createHouseMeshes(50, terrainSize, waterSize);
-	createCreatures(numCreatures, radius);
+	MyModel boatModel = boat.createMesh();
+	myModels.push_back(boatModel);
 
-	boat.createMesh();
+	MyMesh terrainMesh = createTerrainMesh(terrainSize);
+	myMeshes.push_back(terrainMesh);
+
+	MyMesh waterMesh = createWaterMesh(waterSize);
+	myMeshes.push_back(waterMesh);
+
+	vector<MyMesh> houseMeshes = createHouseMeshes(50, terrainSize, waterSize);
+	myMeshes.insert(myMeshes.end(), houseMeshes.begin(), houseMeshes.end());
+
+	vector<Creature> creatureMeshes = createCreatureMeshes(numCreatures, creatureRadius, creatureInitialSpeed);
+	creatures.insert(creatures.end(), creatureMeshes.begin(), creatureMeshes.end());
 
 	cams[2].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, tracking == 1);
 	cams[2].computeCameraAngles();
-
-	//initCreatures();
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
@@ -785,6 +780,8 @@ void init()
 
 
 int main(int argc, char **argv) {
+
+	lastTime = std::chrono::high_resolution_clock::now();
 
 	//  GLUT initialization
 	glutInit(&argc, argv);

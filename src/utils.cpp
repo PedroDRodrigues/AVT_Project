@@ -70,3 +70,8 @@ std::array<float, 3> lerpPosition(const std::array<float, 3>& start, const std::
 		start[2] + t * (end[2] - start[2])
 	};
 };
+
+bool isApproximatelyMultipleOf(float number, int multipleOf, float tolerance) {
+	float remainder = std::fmod(std::abs(number), multipleOf);
+	return remainder <= tolerance || remainder >= (multipleOf - tolerance);
+}
