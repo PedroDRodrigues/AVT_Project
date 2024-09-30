@@ -73,13 +73,13 @@ MyMesh createCube() {
 	MyMesh amesh;
 	amesh.numIndexes = faceCount *3;
 
-	//amesh.max_pos_vert[0] = 1.0f;
-	//amesh.max_pos_vert[1] = 1.0f;
-	//amesh.max_pos_vert[2] = 1.0f;
+	amesh.max_pos_vert[0] = 1.0f;
+	amesh.max_pos_vert[1] = 1.0f;
+	amesh.max_pos_vert[2] = 1.0f;
 
-	//amesh.min_pos_vert[0] = 0.0f;
-	//amesh.min_pos_vert[1] = 0.0f;
-	//amesh.min_pos_vert[2] = 0.0f;
+	amesh.min_pos_vert[0] = 0.0f;
+	amesh.min_pos_vert[1] = 0.0f;
+	amesh.min_pos_vert[2] = 0.0f;
 
 	glGenVertexArrays(1, &(amesh.vao));
 	glBindVertexArray(amesh.vao);

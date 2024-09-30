@@ -31,6 +31,9 @@ Boat::Boat() {
 
     rotationAngle = degToRad(2.0f);
     paddleStrength = 1.0f;
+
+    max_pos_vert = { 1.0f, 1.0f, 1.0f };
+    min_pos_vert = { 0.0f, 0.0f, 0.0f };
 }
 
 void Boat::applyAcceleration() {
@@ -115,6 +118,14 @@ std::array<float, 3> Boat::getDirection() const {
     return direction;
 }
 
+std::array<float, 3> Boat::getMaxPosVert() const {
+    return max_pos_vert;
+}
+
+std::array<float, 3> Boat::getMinPosVert() const {
+    return min_pos_vert;
+}
+
 float Boat::getSpeed() const {
     return speed;
 }
@@ -132,3 +143,10 @@ void Boat::render(MatrixTypes MODEL) {
     rotate(MODEL, radToDeg(yaw), 0, 1, 0);
 }
 
+void Boat::stop() {
+    speed = 0.0f;
+}
+
+void Boat::setPosition(float x, float y, float z) {
+    position = { x, y, z };
+}

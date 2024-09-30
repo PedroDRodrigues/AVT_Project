@@ -141,6 +141,87 @@ float seconds = 0.0f;
 
 // --------------------------
 
+/* Check boat's collision with water creatures - AABB */
+
+void checkCollisionCreatures(Creature creature, Boat boat) {
+    float boatX = boat.getPosition()[0];
+    float boatY = boat.getPosition()[1];
+    float boatZ = boat.getPosition()[2];
+
+    float boatMaxX = boat.getMaxPosVert()[0];
+    float boatMaxY = boat.getMaxPosVert()[1];
+    float boatMaxZ = boat.getMaxPosVert()[2];
+
+	float boatMinX = boat.getMinPosVert()[0];
+	float boatMinY = boat.getMinPosVert()[1];
+	float boatMinZ = boat.getMinPosVert()[2];
+
+    float creatureX = creature.x;
+    float creatureY = creature.y;    
+	float creatureZ = creature.z;
+
+    float creatureMaxX = creature.max_pos_vert[0];
+    float creatureMaxY = creature.max_pos_vert[1];
+    float creatureMaxZ = creature.max_pos_vert[2];
+
+	float creatureMinX = creature.min_pos_vert[0];
+	float creatureMinY = creature.min_pos_vert[1];
+	float creatureMinZ = creature.min_pos_vert[2];
+
+    // check if the boat collides with the creature
+    if (boatX + boatMaxX >= creatureX && creatureX + creatureMaxX >= boatX)
+		if (boatY + boatMaxY >= creatureY && creatureY + creatureMaxY >= boatY)			
+
+
+	if (boatX + boatMinX >= creatureX && creatureX + creatureMinX >= boatX) {
+		if (boatY + boatMinY >= creatureY && creatureY + creatureMinY >= boatY) {
+			boat.stop();
+			boat.setPosition(0.0f, 10.0f, 0.0f);
+		}
+	}
+}
+
+/* Check collisions with MyMeshes objects */
+
+void checkCollisionMeshes(MyMesh mesh, Boat boat) {
+    float boatX = boat.getPosition()[0];
+    float boatY = boat.getPosition()[1];
+    float boatZ = boat.getPosition()[2];
+
+    float boatMaxX = boat.getMaxPosVert()[0];
+    float boatMaxY = boat.getMaxPosVert()[1];
+    float boatMaxZ = boat.getMaxPosVert()[2];
+
+	float boatMinX = boat.getMinPosVert()[0];
+	float boatMinY = boat.getMinPosVert()[1];
+	float boatMinZ = boat.getMinPosVert()[2];
+
+	float meshX = mesh.xPosition;
+	float meshY = mesh.yPosition;
+	float meshZ = mesh.zPosition;
+
+	float meshMaxX = mesh.max_pos_vert[0];
+	float meshMaxY = mesh.max_pos_vert[1];
+	float meshMaxZ = mesh.max_pos_vert[2];
+
+	float meshMinX = mesh.min_pos_vert[0];
+	float meshMinY = mesh.min_pos_vert[1];
+	float meshMinZ = mesh.min_pos_vert[2];
+
+	// check if the boat collides with the mesh
+	if (boatX + boatMaxX >= meshX && meshX + meshMaxX >= boatX)
+		if (boatY + boatMaxY >= meshY && meshY + meshMaxY >= boatY)
+
+	if (boatX + boatMinX >= meshX && meshX + meshMinX >= boatX) {
+		if (boatY + boatMinY >= meshY && meshY + meshMinY >= boatY) {
+			// move slightly the mesh to avoid collision
+			boat.stop();
+			mesh.xPosition += 0.2f;
+			mesh.yPosition += 0.2f;
+		}
+	}
+}
+
 void timer(int value)
 {
 	//// creature timer
@@ -306,6 +387,15 @@ void renderScene(void) {
 	glLightfv(GL_LIGHT0, GL_SPECULAR, dirLight_specular);
 	glLightfv(GL_LIGHT0, GL_POSITION, dirLightPos);	
 	
+	for (int i = 0; i < myMeshes.size(); i++) {
+		checkCollisionMeshes(myMeshes[i], boat);
+	}
+
+		// Check collision with objects in the scene
+    for (int i = 0; i < creatures.size(); i++) {
+		checkCollisionCreatures(creatures[i], boat);
+	}
+
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < myMeshes.size(); i++) {
