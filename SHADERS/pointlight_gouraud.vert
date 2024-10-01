@@ -41,7 +41,8 @@ struct Materials {
 	vec4 specular;
 	vec4 emissive;
 	float shininess;
-	int textCount;
+	int texCount;
+	float alpha;
 };
 
 uniform Materials mat;
@@ -143,8 +144,9 @@ void main() {
     float fogFactor = exp(-fogDensity * (distance - fogStart));
     fogFactor = clamp(fogFactor, 0.0, 1.0);
     vec4 foggedColor = mix(fogColor, DataOut.color, fogFactor);
-	
-	DataOut.color = foggedColor;
+
+	// DataOut.color = foggedColor;	
+	DataOut.color = vec4(foggedColor.rgb, mat.alpha);
 
 	gl_Position = m_pvm * position;	
 

@@ -117,6 +117,10 @@ GLuint fogColorLoc;
 GLuint fogStartLoc;
 GLuint fogDensityLoc;
 
+// transparency stuff
+float alpha = 0.5;
+GLuint alphaLoc;
+
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
@@ -336,9 +340,12 @@ void renderScene(void) {
 	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
 	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
 
+	//alphaLoc = glGetUniformLocation(shader.getProgramIndex(), "mat.alpha");
+
 	glUniform4fv(fogColorLoc, 1, fogColor.data());
 	glUniform1f(fogStartLoc, fogStart);
 	glUniform1f(fogDensityLoc, fogDensity);
+	//glUniform1f(alphaLoc, alpha);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -357,6 +364,7 @@ void renderScene(void) {
 		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), (pointlight_diffuse[0] + counter), (pointlight_diffuse[1] + counter), (pointlight_diffuse[2] + counter), pointlight_diffuse[3]);
 		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.specular").c_str()), (pointlight_specular[0] + counter), (pointlight_specular[1] + counter), (pointlight_specular[2] + counter), pointlight_specular[3]);
 		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.alpha").c_str()), 1.0f);
 		counter += 0.1f;
 		glLightfv(GL_LIGHT1 + i, GL_AMBIENT, pointlight_ambient);
 		glLightfv(GL_LIGHT1 + i, GL_DIFFUSE, pointlight_diffuse);
@@ -381,6 +389,7 @@ void renderScene(void) {
 		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), spotLights_diffuse[0], spotLights_diffuse[1], spotLights_diffuse[2], spotLights_diffuse[3]);
 		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.specular").c_str()), spotLights_specular[0], spotLights_specular[1], spotLights_specular[2], spotLights_specular[3]);
 		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.alpha").c_str()), 1.0f);
 
 		glLightfv(GL_LIGHT2 + i, GL_AMBIENT, spotLights_ambient);
 		glLightfv(GL_LIGHT2 + i, GL_DIFFUSE, spotLights_diffuse);
@@ -397,6 +406,7 @@ void renderScene(void) {
 	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.diffuse"), dirLight_diffuse[0], dirLight_diffuse[1], dirLight_diffuse[2], dirLight_diffuse[3]);
 	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.specular"), dirLight_specular[0], dirLight_specular[1], dirLight_specular[2], dirLight_specular[3]);
 	glUniform1f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.shininess"), 100.0f);
+	glUniform1f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.alpha"), 1.0f);
 
 	glLightfv(GL_LIGHT0, GL_AMBIENT, dirLight_ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, dirLight_diffuse);
@@ -427,6 +437,8 @@ void renderScene(void) {
 		glUniform4fv(loc, 1, currMesh.mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, currMesh.mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.alpha");
+		glUniform1f(loc, currMesh.mat.alpha);
 
 		pushMatrix(MODEL);
 		if (currMesh.name == "terrain") {
@@ -481,6 +493,7 @@ void renderScene(void) {
 		popMatrix(MODEL);
 	}
 
+	glDepthMask(GL_FALSE);
 	for (int i = 0; i < creatures.size(); i++) {
 		Creature& currCreature = creatures[i];
 
@@ -492,6 +505,8 @@ void renderScene(void) {
 		glUniform4fv(loc, 1, currCreature.mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, currCreature.mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.alpha");
+		glUniform1f(loc, currCreature.mat.alpha);
 
 		currCreature.update(deltaTime, creatureSpeedMultiplier, creatureMaxDistance, creatureRadius);
 		currCreature.applyShakeAnimation(seconds, creatureShakeAmplitude);
@@ -517,6 +532,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 	}
+	glDepthMask(GL_TRUE);
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -798,6 +814,8 @@ GLuint setupShaders() {
 	fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
 	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
 	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
+
+	//alphaLoc = glGetUniformLocation(shader.getProgramIndex(), "mat.alpha");
 	
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
