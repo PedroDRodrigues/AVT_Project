@@ -70,7 +70,7 @@ vector<struct Creature> creatures;
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float terrainSize = 1000.0f;
+float terrainSize = 2000.0f;
 float waterSize = 700.0f;
 
 // boat object
@@ -108,6 +108,14 @@ float r = 100.0f;
 //camera declarations
 Camera cams[3];
 int activeCam = 2;
+
+// fog stuff
+std::array<float, 4> fogColor = { 0.5f, 0.5f, 0.5f, 1.0f };
+float fogStart = 10.0f;
+float fogDensity = 0.01f;
+GLuint fogColorLoc;
+GLuint fogStartLoc;
+GLuint fogDensityLoc;
 
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
@@ -323,6 +331,14 @@ void renderScene(void) {
 	// use our shader
 
 	glUseProgram(shader.getProgramIndex());
+
+	fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
+	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
+	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
+
+	glUniform4fv(fogColorLoc, 1, fogColor.data());
+	glUniform1f(fogStartLoc, fogStart);
+	glUniform1f(fogDensityLoc, fogDensity);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -774,9 +790,14 @@ GLuint setupShaders() {
 		sCut_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].cutoff").c_str());
 	}
 	dPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
+	
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+
+	fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
+	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
+	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
 	
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 

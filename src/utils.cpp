@@ -75,3 +75,11 @@ bool isApproximatelyMultipleOf(float number, int multipleOf, float tolerance) {
 	float remainder = std::fmod(std::abs(number), multipleOf);
 	return remainder <= tolerance || remainder >= (multipleOf - tolerance);
 }
+
+float length(const std::array<float, 3>& vec) {
+	return std::sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+}
+
+std::array<float, 3> subtract(const std::array<float, 3>& a, const std::array<float, 3>& b) {
+	return { a[0] - b[0], a[1] - b[1], a[2] - b[2] };
+}

@@ -31,6 +31,10 @@ uniform mat3 m_normal;
 
 uniform vec4 l_pos;
 
+uniform vec4 fogColor;
+uniform float fogStart;
+uniform float fogDensity;
+
 struct Materials {
 	vec4 diffuse;
 	vec4 ambient;
@@ -134,6 +138,13 @@ void main() {
 		float cutoff = spotLightsPos[i].cutoff;
 		DataOut.color += calcSpotLight(l, s, cutoff, n, e);
 	}
+
+    float distance = length(pos.xyz);
+    float fogFactor = exp(-fogDensity * (distance - fogStart));
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    vec4 foggedColor = mix(fogColor, DataOut.color, fogFactor);
+	
+	DataOut.color = foggedColor;
 
 	gl_Position = m_pvm * position;	
 
