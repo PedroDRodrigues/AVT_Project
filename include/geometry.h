@@ -18,6 +18,7 @@ struct Material{
 	int texCount;
 	float alpha;
 };
+
 // A model can be made of many meshes. Each is stored  in the following structure
 struct MyMesh {
 	virtual ~MyMesh() {}

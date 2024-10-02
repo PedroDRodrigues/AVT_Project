@@ -33,7 +33,6 @@ void main() {
     // Transform position and normal into view space
     vec4 viewPosition = m_viewModel * position;
     DataOut.fragPosition = viewPosition.xyz;
-
     DataOut.fragNormal = normalize(m_normal * normal.xyz);
 
     // Set the position in clip space

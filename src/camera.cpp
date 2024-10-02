@@ -29,8 +29,8 @@ Camera::Camera() {
 void Camera::followBoat(std::array<float, 3> boatPosition, std::array<float, 3> boatDirection, bool topCamera = false, bool mouseMoving = false) {
 
     if (topCamera) {
-        camPos[0] = boatPosition[0];
-        camPos[2] = boatPosition[2];
+        //camPos[0] = boatPosition[0];
+        //camPos[2] = boatPosition[2];
 
         glutPostRedisplay();
         return;
