@@ -37,9 +37,20 @@ struct Materials {
 
 uniform Materials mat;
 
+uniform int texMode;
+
+uniform sampler2D texmap;
+uniform sampler2D texmap1;
+uniform sampler2D texmap2;
+
+uniform bool spotlight_mode;
+uniform bool pointlight_mode;
+uniform bool dirlight_mode;
+
 in Data {
     vec3 fragPosition;
     vec3 fragNormal;
+    vec2 tex_coord;
 } DataIn;
 
 out vec4 colorOut;
@@ -55,7 +66,21 @@ vec4 CalcDirLight(DirectionalLight dirLight, vec3 n, vec3 e) {
         spec = mat.specular * pow(intSpec, mat.shininess);
     }
 
-    return max(intensity * mat.diffuse + spec, mat.ambient);
+    // return max(intensity * mat.diffuse + spec, mat.ambient);
+
+    vec4 texel;
+    vec4 texel1;
+
+    if (texMode == 0) {
+        return max(intensity * mat.diffuse + spec, mat.ambient);
+    } else if (texMode == 1) {
+        texel = texture(texmap, DataIn.tex_coord);
+        texel1 = texture(texmap2, DataIn.tex_coord);
+        return max(intensity * texel * texel1 + spec, 0.07 * texel);
+    } else {
+        texel = texture(texmap1, DataIn.tex_coord);
+        return max(intensity * texel + spec, 0.07 * texel);
+    }
 }
 
 vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
@@ -68,7 +93,21 @@ vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
         spec = mat.specular * pow(intSpec, mat.shininess);
     }
 
-    return max(intensity * mat.diffuse + spec, mat.ambient);
+    // return max(intensity * mat.diffuse + spec, mat.ambient);
+
+    vec4 texel;
+    vec4 texel1;
+
+    if (texMode == 0) {
+        return max(intensity * mat.diffuse + spec, mat.ambient);
+    } else if (texMode == 1) {
+        texel = texture(texmap, DataIn.tex_coord);
+        texel1 = texture(texmap2, DataIn.tex_coord);
+        return max(intensity * texel * texel1 + spec, 0.07 * texel);
+    } else {
+        texel = texture(texmap1, DataIn.tex_coord);
+        return max(intensity * texel + spec, 0.07 * texel);
+    }
 }
 
 vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
@@ -83,32 +122,55 @@ vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
             spec = mat.specular * pow(intSpec, mat.shininess);
         }
 
-        return max(intensity * mat.diffuse + spec, mat.ambient);
+        vec4 texel;
+        vec4 texel1;
+
+        if (texMode == 0) {
+            return max(intensity * mat.diffuse + spec, mat.ambient);
+        } else if (texMode == 1) {
+            texel = texture(texmap, DataIn.tex_coord);
+            texel1 = texture(texmap2, DataIn.tex_coord);
+            return max(intensity * texel *texel1 + spec, 0.07 * texel);
+        } else {
+            texel = texture(texmap1, DataIn.tex_coord);
+            return max(intensity * texel + spec, 0.07 * texel);
+        }
+
+        //return max(intensity * mat.diffuse + spec, mat.ambient);
     }
 
     return mat.ambient;
+
+
 }
 
 void main() {
     vec3 n = normalize(DataIn.fragNormal);
     vec3 e = normalize(-DataIn.fragPosition);
+    vec4 color;
 
-    // Initialize color with the directional light contribution
-    vec4 color = CalcDirLight(dirLight, n, e);
-
-    // Add contributions from all point lights
-    for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
-        vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
-        vec3 l = normalize(pl);
-        color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
+    if (dirlight_mode) {
+        // Initialize color with the directional light contribution
+        color = CalcDirLight(dirLight, n, e);
+    }
+    
+    if (pointlight_mode) {
+        // Add contributions from all point lights
+        for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+            vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
+            vec3 l = normalize(pl);
+            color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
+        }
     }
 
-    // Add contributions from all spot lights
-    for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
-        vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
-        vec3 s = normalize(-spotLightsPos[i].direction);
-        float cutoff = spotLightsPos[i].cutoff;
-        color += calcSpotLight(l, s, cutoff, n, e);
+    if (spotlight_mode) {
+        // Add contributions from all spot lights
+        for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+            vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
+            vec3 s = normalize(-spotLightsPos[i].direction);
+            float cutoff = spotLightsPos[i].cutoff;
+            color += calcSpotLight(l, s, cutoff, n, e);
+        }
     }
 
     // Apply fog effect

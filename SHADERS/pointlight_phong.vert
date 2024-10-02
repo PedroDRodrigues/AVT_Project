@@ -17,6 +17,8 @@ struct DirectionalLight {
     vec4 direction;
 };
 
+in vec4 texCoord;
+
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
@@ -27,6 +29,7 @@ in vec4 normal;
 out Data {
     vec3 fragPosition;
     vec3 fragNormal;
+    vec2 tex_coord;
 } DataOut;
 
 void main() {
@@ -34,6 +37,7 @@ void main() {
     vec4 viewPosition = m_viewModel * position;
     DataOut.fragPosition = viewPosition.xyz;
     DataOut.fragNormal = normalize(m_normal * normal.xyz);
+    DataOut.tex_coord = texCoord.st;
 
     // Set the position in clip space
     gl_Position = m_pvm * position;
