@@ -29,26 +29,12 @@ Camera::Camera() {
 void Camera::followBoat(std::array<float, 3> boatPosition, std::array<float, 3> boatDirection, bool topCamera = false, bool mouseMoving = false) {
 
     if (topCamera) {
+        camPos[0] = boatPosition[0];
+        camPos[2] = boatPosition[2];
+
         glutPostRedisplay();
         return;
     }
-
-    //float distance = 30.0f;
-    //float smoothingFactor = 0.1f;
-
-    //std::array<float, 3> targetPosition = {
-    //    boatPosition[0] - boatDirection[0] * distance,
-    //    40.0f,
-    //    boatPosition[2] - boatDirection[2] * distance,
-    //};
-
-    //std::array<float, 3> tempPos = {
-    //    camPos[0], camPos[1], camPos[2]
-    //};
-    //std::array<float, 3> newPos = lerpPosition(tempPos, targetPosition, smoothingFactor);
-    //camPos[0] = newPos[0];
-    //camPos[1] = newPos[1];
-    //camPos[2] = newPos[2];
 
     float distance = 30.0f;
 

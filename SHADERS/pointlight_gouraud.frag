@@ -7,6 +7,5 @@ in Data {
 } DataIn;
 
 void main() {
-
 	colorOut = DataIn.color;
 }

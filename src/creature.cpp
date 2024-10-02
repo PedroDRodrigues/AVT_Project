@@ -17,6 +17,7 @@ Creature createCreatureMesh(int radius, float initialSpeed) {
     float emissive_darkblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     float shininess_darkblue = 20.0f;
     int texcount_darkblue = 0;
+    float alpha_darkblue = 0.1f;
 
     MyMesh sphereMesh = createSphere(1, 32);
 
@@ -38,6 +39,7 @@ Creature createCreatureMesh(int radius, float initialSpeed) {
     memcpy(amesh.mat.emissive, emissive_darkblue, 4 * sizeof(float));
     amesh.mat.shininess = shininess_darkblue;
     amesh.mat.texCount = texcount_darkblue;
+    amesh.mat.alpha = alpha_darkblue;
 
     amesh.x = x;
     amesh.y = y;
