@@ -32,7 +32,6 @@ struct Materials {
     vec4 emissive;
     float shininess;
     int texCount;
-    float alpha;
 };
 
 uniform Materials mat;
@@ -111,11 +110,13 @@ void main() {
         color += calcSpotLight(l, s, cutoff, n, e);
     }
 
+    color = vec4(color.rgb, mat.diffuse.a);
+
     // Apply fog effect
     float distance = length(DataIn.fragPosition);
     float fogFactor = exp(-fogDensity * (distance - fogStart));
     fogFactor = clamp(fogFactor, 0.0, 1.0);
-    vec4 foggedColor = mix(fogColor, color, fogFactor);
+    colorOut = mix(fogColor, color, fogFactor);
 
-    colorOut = vec4(foggedColor.rgb, mat.alpha);
+    // colorOut = vec4(foggedColor.rgb, mat.alpha);
 }

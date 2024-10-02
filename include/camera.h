@@ -24,6 +24,7 @@ public:
     void followBoat(std::array<float, 3> boatPosition, std::array<float, 3> boatDirection, bool topCamera, bool mouseMoving);
     void updateTarget(float dx, float dy, float dz);
     void computeCameraAngles();
+    float distanceFromCamera(std::array<float, 3> point);
 
 };
 

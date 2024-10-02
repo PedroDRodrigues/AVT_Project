@@ -90,3 +90,12 @@ void Camera::computeCameraAngles() {
     yaw = radToDeg(atan2(directionNormalized[2], directionNormalized[0]));
     pitch = radToDeg(asin(directionNormalized[1]));
 }
+
+float Camera::distanceFromCamera(std::array<float, 3> point) {
+    float dx = camPos[0] - point[0];
+    float dy = camPos[1] - point[1];
+    float dz = camPos[2] - point[2];
+
+    float distance = sqrt(dx * dx + dy * dy + dz * dz);
+    return distance;
+}

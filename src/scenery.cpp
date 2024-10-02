@@ -11,13 +11,13 @@ const float PI = 3.14159f;
 MyMesh createTerrainMesh(float terrainSize) {
     MyMesh amesh;
 
+    float alpha_green = 1.0f;
     float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
-    float diff_green[] = { 0.0f, 0.8f, 0.0f, 1.0f };
+    float diff_green[] = { 0.0f, 0.8f, 0.0f, alpha_green };
     float spec_green[] = { 0.5f, 0.5f, 0.5f, 1.0f };
     float emissive_green[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     float shininess_green = 20.0f;
     int texcount_green = 0;
-    float alpha_green = 1.0f;
 
     amesh = createQuad(terrainSize, terrainSize);
     memcpy(amesh.mat.ambient, amb_green, 4 * sizeof(float));
@@ -26,7 +26,6 @@ MyMesh createTerrainMesh(float terrainSize) {
     memcpy(amesh.mat.emissive, emissive_green, 4 * sizeof(float));
     amesh.mat.shininess = shininess_green;
     amesh.mat.texCount = texcount_green;
-    amesh.mat.alpha = alpha_green;
 
     amesh.name = "terrain";
     return amesh;
@@ -35,13 +34,13 @@ MyMesh createTerrainMesh(float terrainSize) {
 MyMesh createWaterMesh(float waterSize) {
     MyMesh amesh;
 
+    float alpha_lightblue = 1.0f;
     float amb_lightblue[] = { 0.0f, 0.2f, 0.3f, 1.0f };
-    float diff_lightblue[] = { 0.4f, 0.6f, 0.8f, 1.0f };
+    float diff_lightblue[] = { 0.4f, 0.6f, 0.8f, alpha_lightblue };
     float spec_lightblue[] = { 0.5f, 0.5f, 0.5f, 1.0f };
     float emissive_lightblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     float shininess_lightblue = 100.0f;
     int texcount_lightblue = 0;
-    float alpha_lightblue = 1.0f;
 
     amesh = createQuad(waterSize, waterSize);
     memcpy(amesh.mat.ambient, amb_lightblue, 4 * sizeof(float));
@@ -50,7 +49,6 @@ MyMesh createWaterMesh(float waterSize) {
     memcpy(amesh.mat.emissive, emissive_lightblue, 4 * sizeof(float));
     amesh.mat.shininess = shininess_lightblue;
     amesh.mat.texCount = texcount_lightblue;
-    amesh.mat.alpha = alpha_lightblue;
 
     amesh.name = "water";
     return amesh;
@@ -60,13 +58,13 @@ vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float wa
 
     vector<MyMesh> houseMeshes;
 
+    float alpha_beige = 1.0f;
     float amb_beige[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-    float diff_beige[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+    float diff_beige[] = { 0.8f, 0.6f, 0.4f, alpha_beige };
     float spec_beige[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     float emissive_beige[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     float shininess_beige = 100.0f;
     int texcount_beige = 0;
-    float alpha_beige = 1.0f;
 
     for (int i = 0; i < numberOfHouses; i++) {
         MyMesh amesh;
@@ -78,7 +76,6 @@ vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float wa
         memcpy(amesh.mat.emissive, emissive_beige, 4 * sizeof(float));
         amesh.mat.shininess = shininess_beige;
         amesh.mat.texCount = texcount_beige;
-        amesh.mat.alpha = alpha_beige;
 
         std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize);
         amesh.xPosition = point.first;

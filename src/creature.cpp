@@ -11,13 +11,13 @@ const float PI = 3.14159f;
 using namespace std;
 
 Creature createCreatureMesh(int radius, float initialSpeed) {
+    float alpha_darkblue = 0.1f;
     float amb_darkblue[] = { 0.02f, 0.02f, 0.1f, 1.0f };
-    float diff_darkblue[] = { 0.1f, 0.1f, 0.5f, 1.0f };
+    float diff_darkblue[] = { 0.1f, 0.1f, 0.5f, alpha_darkblue };
     float spec_darkblue[] = { 0.1f, 0.1f, 0.1f, 1.0f };
     float emissive_darkblue[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     float shininess_darkblue = 20.0f;
     int texcount_darkblue = 0;
-    float alpha_darkblue = 0.1f;
 
     MyMesh sphereMesh = createSphere(1, 32);
 
@@ -39,7 +39,6 @@ Creature createCreatureMesh(int radius, float initialSpeed) {
     memcpy(amesh.mat.emissive, emissive_darkblue, 4 * sizeof(float));
     amesh.mat.shininess = shininess_darkblue;
     amesh.mat.texCount = texcount_darkblue;
-    amesh.mat.alpha = alpha_darkblue;
 
     amesh.x = x;
     amesh.y = y;

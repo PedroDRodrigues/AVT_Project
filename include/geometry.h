@@ -16,7 +16,6 @@ struct Material{
 	float emissive[4];
 	float shininess;
 	int texCount;
-	float alpha;
 };
 
 // A model can be made of many meshes. Each is stored  in the following structure
