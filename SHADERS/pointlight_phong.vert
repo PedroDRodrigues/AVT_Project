@@ -1,27 +1,41 @@
 #version 430
 
+#define NUM_POINT_LIGHTS 6
+#define NUM_SPOT_LIGHTS 2
+
+struct PointLight {
+    vec4 position;
+};
+
+struct SpotLight {
+    vec4 position;
+    vec3 direction;
+    float cutoff;
+};
+
+struct DirectionalLight {
+    vec4 direction;
+};
+
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-uniform vec4 l_pos;
-
 in vec4 position;
-in vec4 normal;    //por causa do gerador de geometria
+in vec4 normal;
 
 out Data {
-	vec3 normal;
-	vec3 eye;
-	vec3 lightDir;
+    vec3 fragPosition;
+    vec3 fragNormal;
 } DataOut;
 
-void main () {
+void main() {
+    // Transform position and normal into view space
+    vec4 viewPosition = m_viewModel * position;
+    DataOut.fragPosition = viewPosition.xyz;
 
-	vec4 pos = m_viewModel * position;
+    DataOut.fragNormal = normalize(m_normal * normal.xyz);
 
-	DataOut.normal = normalize(m_normal * normal.xyz);
-	DataOut.lightDir = vec3(l_pos - pos);
-	DataOut.eye = vec3(-pos);
-
-	gl_Position = m_pvm * position;	
+    // Set the position in clip space
+    gl_Position = m_pvm * position;
 }
