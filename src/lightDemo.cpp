@@ -34,6 +34,7 @@
 #include "include/VertexAttrDef.h"
 #include "include/avtFreeType.h"
 #include "include/meshUtils.h"
+#include "include/Texture_Loader.h"
 
 // our classes
 #include "include/camera.h"
@@ -94,6 +95,9 @@ GLint sDir_uniformId[NUM_SPOT_LIGHTS];
 GLint sCut_uniformId[NUM_SPOT_LIGHTS];
 GLint dPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
+GLint texMode_uniformId;
+
+GLuint TextureArray[3];
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -356,6 +360,41 @@ void renderScene(void) {
 	GLfloat pointlight_specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 	float counter = 0;
 
+	loc = glGetUniformLocation(shader.getProgramIndex(), "spotlight_mode");
+	if (spot_trigger)
+		glUniform1i(loc, 1);
+	else
+		glUniform1i(loc, 0);
+
+	loc = glGetUniformLocation(shader.getProgramIndex(), "pointlight_mode");
+	if (point_trigger)
+		glUniform1i(loc, 1);
+	else
+		glUniform1i(loc, 0);
+
+	loc = glGetUniformLocation(shader.getProgramIndex(), "dirlight_mode");
+	if (direct_trigger)
+		glUniform1i(loc, 1);
+	else
+		glUniform1i(loc, 0);
+	
+	//Associar os Texture Units aos Objects Texture
+	//agua.png loaded in TU0; stone.tga loaded in TU1;  lightwood.tga loaded in TU2
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+	
+	
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc, 0);
+	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
+
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {		
 		multMatrixPoint(VIEW, pointLightsPos[i], res);   //light position in eye coordinates
 		glUniform4fv(lPos_uniformId[i], 1, res);
@@ -459,6 +498,16 @@ void renderScene(void) {
 		computeNormalMatrix3x3();
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
+		if (currMesh.name == "water") {
+			glUniform1i(texMode_uniformId, 1);
+		}
+		else if (currMesh.name == "terrain") {
+			glUniform1i(texMode_uniformId, 2);
+		}
+		else {
+			glUniform1i(texMode_uniformId, 0);
+		}
+
 		// Render mesh
 		glBindVertexArray(currMesh.vao);
 
@@ -486,6 +535,7 @@ void renderScene(void) {
 		computeNormalMatrix3x3();
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
+		glUniform1i(texMode_uniformId, 0);
 		glBindVertexArray(currModel.VAO);
 		glDrawElements(GL_TRIANGLES, currModel.indexCount, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
@@ -526,6 +576,7 @@ void renderScene(void) {
 		computeNormalMatrix3x3();
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
+		glUniform1i(texMode_uniformId, 0);
 		glBindVertexArray(currCreature.vao);
 		glDrawElements(GL_TRIANGLES, currCreature.numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
@@ -782,7 +833,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0,"colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "tex_coord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -793,18 +844,22 @@ GLuint setupShaders() {
 		exit(1);
 	}
 
+	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
 		lPos_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].position").c_str());
 	}
+	
 	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
 		sPos_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].position").c_str());
 		sDir_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].direction").c_str());
 		sCut_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].cutoff").c_str());
 	}
+
 	dPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
@@ -854,16 +909,22 @@ void init()
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
+	
+	//Texture Object definition
+	glGenTextures(3, TextureArray);
+	Texture2D_Loader(TextureArray, "agua.png", 0);
+	Texture2D_Loader(TextureArray, "relva1.png", 1);
+	Texture2D_Loader(TextureArray, "stone.tga", 2);
 
 	// top view cameras
 
 	cams[0].camPos[0] = 0.01f;
-	cams[0].camPos[1] = 100.0f;
+	cams[0].camPos[1] = 200.0f;
 	cams[0].camPos[2] = 0.01f;
 	cams[0].type = ORTHOGONAL;
 
 	cams[1].camPos[0] = 0.01f;
-	cams[1].camPos[1] = 100.0f;
+	cams[1].camPos[1] = 200.0f;
 	cams[1].camPos[2] = 0.01f;
 
 	MyModel boatModel = boat.createMesh();
