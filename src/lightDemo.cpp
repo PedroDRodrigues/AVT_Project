@@ -71,8 +71,8 @@ vector<struct Creature> creatures;
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float terrainSize = 2000.0f;
-float waterSize = 700.0f;
+float terrainSize = 250.0f;
+float waterSize = 170.0f;
 
 // boat object
 Boat boat = Boat();
@@ -381,7 +381,6 @@ void renderScene(void) {
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
-	
 	
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, 0);
@@ -899,7 +898,7 @@ void init()
 	glGenTextures(3, TextureArray);
 	Texture2D_Loader(TextureArray, "agua.png", 0);
 	Texture2D_Loader(TextureArray, "relva1.png", 1);
-	Texture2D_Loader(TextureArray, "stone.tga", 2);
+	Texture2D_Loader(TextureArray, "water.png", 2);
 
 	// top view cameras
 
