@@ -11,12 +11,23 @@ struct Materials {
 	int texCount;
 };
 
+uniform int texMode;
+
 uniform Materials mat;
+
+uniform sampler2D texmap;
+uniform sampler2D texmap1;
+uniform sampler2D texmap2;
+
+uniform bool spotlight_mode;
+uniform bool pointlight_mode;
+uniform bool dirlight_mode;
 
 in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataIn;
 
 void main() {
