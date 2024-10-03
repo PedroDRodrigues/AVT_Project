@@ -14,16 +14,28 @@ float randomBetween(float min, float max) {
 	return dis(gen);
 }
 
-pair<float, float> generateRandomPosition(float sizeA, float sizeB) {
+pair<float, float> generateRandomPosition(float sizeA, float sizeB, float objectRadius, bool insideLimit) {
 	float x, y;
 	while (true) {
-		x = randomBetween(-(sizeA / 2 - 1), (sizeA / 2 - 1));
-		y = randomBetween(-(sizeA / 2 - 1), (sizeA / 2 - 1));
+		x = randomBetween(-(sizeA / 2 - objectRadius), (sizeA / 2 - objectRadius));
+		y = randomBetween(-(sizeA / 2 - objectRadius), (sizeA / 2 - objectRadius));
 
-		if (!(x >= -(sizeB / 2 + 1) && x <= (sizeB / 2 + 1)
-			&& y >= -(sizeB / 2 + 1) && y <= (sizeB / 2 + 1))) {
-			break;
+		bool positionedInsideLimit = !(x >= -(sizeB / 2 + objectRadius) && x <= (sizeB / 2 + objectRadius)
+			&& y >= -(sizeB / 2 + objectRadius) && y <= (sizeB / 2 + objectRadius));
+
+		if (insideLimit) { // supposed to be in water
+			if (!positionedInsideLimit) {
+				break;
+			}
 		}
+		else { // supposed to be in land
+			if (positionedInsideLimit) {
+				break;
+			}
+		}
+		//if (!waterPosition && positionedInWater) {
+		//	break;
+		//}
 	}
 	return make_pair(x, y);
 }

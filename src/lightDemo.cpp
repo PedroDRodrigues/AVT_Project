@@ -480,6 +480,9 @@ void renderScene(void) {
 		else if (currMesh.name == "house") {
 			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
 		}
+		else if (currMesh.name == "obstacle") {
+			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+		}
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -513,6 +516,20 @@ void renderScene(void) {
 		pushMatrix(MODEL);
 
 		if (currModel.name == "boat") {
+			GLfloat boatAmbient[] = { 0.3f, 0.15f, 0.05f, 1.0f };
+			GLfloat boatDiffuse[] = { 0.6f, 0.5f, 0.3f, 1.0f };
+			GLfloat boatSpecular[] = { 0.1f, 0.05f, 0.025f, 1.0f };
+			GLfloat boatShininess = 10.0f;
+
+			GLint loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+			glUniform4fv(loc, 1, boatAmbient);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+			glUniform4fv(loc, 1, boatDiffuse);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+			glUniform4fv(loc, 1, boatSpecular);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+			glUniform1f(loc, boatShininess);
+
 			boat.render(MODEL);
 			boat.update(deltaTime);
 			cams[activeCam].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, mouseMovingWhilePressed);
@@ -922,6 +939,9 @@ void init()
 
 	vector<MyMesh> houseMeshes = createHouseMeshes(50, terrainSize, waterSize);
 	myMeshes.insert(myMeshes.end(), houseMeshes.begin(), houseMeshes.end());
+
+	vector<MyMesh> obstacleMeshes = createObstacleMeshes(10, terrainSize, waterSize);
+	myMeshes.insert(myMeshes.end(), obstacleMeshes.begin(), obstacleMeshes.end());
 
 	vector<Creature> creatureMeshes = createCreatureMeshes(numCreatures, creatureRadius, creatureInitialSpeed);
 	creatures.insert(creatures.end(), creatureMeshes.begin(), creatureMeshes.end());

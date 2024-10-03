@@ -77,7 +77,7 @@ vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float wa
         amesh.mat.shininess = shininess_beige;
         amesh.mat.texCount = texcount_beige;
 
-        std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize);
+        std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize, 1.0f, false);
         amesh.xPosition = point.first;
         amesh.yPosition = 0;
         amesh.zPosition = point.second;
@@ -87,4 +87,39 @@ vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float wa
     }
 
     return houseMeshes;
+}
+
+vector<MyMesh> createObstacleMeshes(int numberOfObstacles, float terrainSize, float waterSize) {
+    vector<MyMesh> obstacleMeshes;
+
+    float alpha_green = 1.0f;
+    float amb_green[] = { 0.0f, 0.2f, 0.0f, 1.0f };
+    float diff_green[] = { 0.0f, 0.8f, 0.0f, alpha_green };
+    float spec_green[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    float emissive_green[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float shininess_green = 20.0f;
+    int texcount_green = 0;
+
+    for (int i = 0; i < numberOfObstacles; i++) {
+        MyMesh amesh;
+        float obstacle_size = randomBetween(2.5f, 5.0f);
+
+        amesh = createSphere(obstacle_size, 32);
+        memcpy(amesh.mat.ambient, amb_green, 4 * sizeof(float));
+        memcpy(amesh.mat.diffuse, diff_green, 4 * sizeof(float));
+        memcpy(amesh.mat.specular, spec_green, 4 * sizeof(float));
+        memcpy(amesh.mat.emissive, emissive_green, 4 * sizeof(float));
+        amesh.mat.shininess = shininess_green;
+        amesh.mat.texCount = texcount_green;
+
+        std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize, obstacle_size, true);
+        amesh.xPosition = point.first;
+        amesh.yPosition = 0;
+        amesh.zPosition = point.second;
+
+        amesh.name = "obstacle";
+        obstacleMeshes.push_back(amesh);
+    }
+
+    return obstacleMeshes;
 }
