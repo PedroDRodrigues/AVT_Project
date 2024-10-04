@@ -128,11 +128,11 @@ char s[32];
 
 float dirLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
 float pointLightsPos[NUM_POINT_LIGHTS][4]= { {0.0f, 4.0f, 0.0f, 1.0f},
-					{-35.0f, 20.0f, -0.5f, 1.0f},
-					{-1.0f, 20.0f, -1.0f, 1.0f},
-					{1.0f, 20.0f, 1.0f, 1.0f},
-					{35.0f, 20.0f, 0.5f, 1.0f},
-					{1.5f, 20.0f, 1.5f, 1.0f}
+					{-35.0f, 20.0f, -25.0f, 1.0f},
+					{-100.0f, 20.0f, -10.0f, 1.0f},
+					{100.0f, 20.0f, 100.0f, 1.0f},
+					{35.0f, 20.0f, 90.0f, 1.0f},
+					{80.0f, 20.0f, 80.0f, 1.0f}
 };
 float spotLightsPos[NUM_SPOT_LIGHTS][4] = { 
 	{boat.getPosition()[0] + 0.3, boat.getPosition()[1] + 0.2, boat.getPosition()[2] + 0.9, 1.0f},
