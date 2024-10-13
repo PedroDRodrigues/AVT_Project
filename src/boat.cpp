@@ -18,7 +18,7 @@
 using std::vector;
 
 Boat::Boat() {
-    position = { 0.0f, 10.0f, 0.0f };
+    position = { 0.0f, 5.0f, 0.0f };
     direction = { 0.0f, 0.0f, 1.0f };
     currentForward = { 0.0f, 0.0f, 1.0f };
 
@@ -32,8 +32,8 @@ Boat::Boat() {
     rotationAngle = degToRad(2.0f);
     paddleStrength = 1.0f;
 
-    max_pos_vert = { 1.0f, 1.0f, 1.0f };
-    min_pos_vert = { 0.0f, 0.0f, 0.0f };
+    max_pos_vert = { 4.0f, 6.0f, 3.0f };
+    min_pos_vert = { 4.0f, 6.0f, 3.0f };
 }
 
 void Boat::applyAcceleration() {
@@ -148,5 +148,7 @@ void Boat::stop() {
 }
 
 void Boat::setPosition(float x, float y, float z) {
-    position = { x, y, z };
+    position[0] = x;
+    position[1] = y;
+    position[2] = z;
 }

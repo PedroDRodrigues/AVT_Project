@@ -6,7 +6,7 @@
 
 using namespace std;
 
-struct Creature : public MyMesh {
+struct LampPost : public MyMesh {
 	GLuint vao;
 	GLuint texUnits[MAX_TEXTURES];
 	texType texTypes[4];
@@ -19,10 +19,8 @@ struct Creature : public MyMesh {
 
 	float x, y, z;
 	float vx, vy, vz;
-	float speed;
-	float oscillationSpeed;
 
-	Creature(const MyMesh mesh, std::array<float, 3> pos, std::array<float, 3> v, float initSpeed) {
+	LampPost(const MyMesh mesh, std::array<float, 3> pos, std::array<float, 3> v) {
 		vao = mesh.vao;
 
 		std::copy(std::begin(mesh.texUnits), std::end(mesh.texUnits), texUnits);
@@ -43,16 +41,10 @@ struct Creature : public MyMesh {
 		vy = v[1];
 		vz = v[2];
 
-		speed = initSpeed;
-		oscillationSpeed = 0.0f;
 	}
-
-	void update(float deltaTime, float speedMultiplier, float maxDistance, float radius);
-	void rebirth(float radius);
-	void applyShakeAnimation(float time, float shakeAmplitude);
 };
 
-Creature createCreatureMesh(float radius, float initialSpeed);
-vector<Creature> createCreatureMeshes(int numberOfCreatures, float radius, float initialSpeed);
+LampPost createLampPostMesh(int radius);
+vector<LampPost> createLampPostMeshes(int numberOfLampPosts, int radius);
 array<float, 3> computeRandomPosition(float radius);
 array<float, 3> computeRandomDirection();

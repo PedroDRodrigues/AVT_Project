@@ -77,10 +77,18 @@ vector<MyMesh> createHouseMeshes(int numberOfHouses, float terrainSize, float wa
         amesh.mat.shininess = shininess_beige;
         amesh.mat.texCount = texcount_beige;
 
-        std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize, 1.0f, false);
+        std::pair<float, float> point = generateRandomPosition(terrainSize, waterSize, 5.0f, false);
         amesh.xPosition = point.first;
         amesh.yPosition = 0;
         amesh.zPosition = point.second;
+
+        amesh.max_pos_vert[0] = 2.0f;
+        amesh.max_pos_vert[1] = 12.0f;
+        amesh.max_pos_vert[2] = 2.0f;
+
+        amesh.min_pos_vert[0] = 2.0f;
+        amesh.min_pos_vert[1] = 12.0f;
+        amesh.min_pos_vert[2] = 2.0f;
 
         amesh.name = "house";
         houseMeshes.push_back(amesh);
@@ -116,6 +124,14 @@ vector<MyMesh> createObstacleMeshes(int numberOfObstacles, float terrainSize, fl
         amesh.xPosition = point.first;
         amesh.yPosition = 0;
         amesh.zPosition = point.second;
+
+        amesh.max_pos_vert[0] = obstacle_size;
+        amesh.max_pos_vert[1] = obstacle_size;
+        amesh.max_pos_vert[2] = obstacle_size;
+
+        amesh.min_pos_vert[0] = obstacle_size;
+        amesh.min_pos_vert[1] = obstacle_size;
+        amesh.min_pos_vert[2] = obstacle_size;
 
         amesh.name = "obstacle";
         obstacleMeshes.push_back(amesh);

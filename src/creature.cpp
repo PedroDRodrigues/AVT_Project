@@ -10,7 +10,7 @@
 const float PI = 3.14159f;
 using namespace std;
 
-Creature createCreatureMesh(int radius, float initialSpeed) {
+Creature createCreatureMesh(float radius, float initialSpeed) {
     float alpha_darkblue = 0.5f;
     float amb_darkblue[] = { 0.02f, 0.02f, 0.1f, 1.0f };
     float diff_darkblue[] = { 0.1f, 0.1f, 0.5f, alpha_darkblue };
@@ -43,6 +43,14 @@ Creature createCreatureMesh(int radius, float initialSpeed) {
     amesh.x = x;
     amesh.y = y;
     amesh.z = z;
+
+    amesh.max_pos_vert[0] = 1.0f;
+    amesh.max_pos_vert[1] = 1.0f;
+    amesh.max_pos_vert[2] = 1.0f;
+
+    amesh.min_pos_vert[0] = 1.0f;
+    amesh.min_pos_vert[1] = 1.0f;
+    amesh.min_pos_vert[2] = 1.0f;
 
     amesh.oscillationSpeed = randomFloat(1.0f, 2.5f);
 
@@ -84,6 +92,12 @@ array<float, 3> computeRandomDirection() {
 void Creature::update(float deltaTime, float speedMultiplier, float maxDistance, float radius) {
     x += vx * speed * speedMultiplier * deltaTime;
     z += vz * speed * speedMultiplier * deltaTime;
+
+    max_pos_vert[0] += vx * speed * speedMultiplier * deltaTime;
+    max_pos_vert[2] += vz * speed * speedMultiplier * deltaTime;
+
+    min_pos_vert[0] += vx * speed * speedMultiplier * deltaTime;
+    min_pos_vert[2] += vz * speed * speedMultiplier * deltaTime; 
 
     float dist = sqrt(x * x + z * z);
     if (dist > maxDistance) {

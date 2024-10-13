@@ -68,11 +68,16 @@ vector<struct MyMesh> myMeshes;
 vector<struct MyModel> myModels;
 vector<struct Creature> creatures;
 
+struct AABB {
+	float min[3];
+	float max[3];
+};
+
 float rotationSensitivity = 0.01f;
 float zoomSensitivity = 0.10f;
 
-float terrainSize = 250.0f;
-float waterSize = 170.0f;
+float terrainSize = 200.0f;
+float waterSize = 120.0f;
 
 // boat object
 Boat boat = Boat();
@@ -151,98 +156,129 @@ std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
 float deltaTime = 0.0f;
 float seconds = 0.0f;
 
+bool isPaused = false;
+bool gameOver = false;
+int lives = 5;
+int points = 0;
+
+std::chrono::high_resolution_clock::time_point startTime, currentTime;
+float elapsedTime = 0.0f;
+
+
+AABB calculateAABBFromCreatures(Creature creature) {
+	AABB aabb;
+
+	aabb.min[0] = creature.x - creature.min_pos_vert[0];
+	aabb.min[1] = creature.y - creature.min_pos_vert[1];
+	aabb.min[2] = creature.z - creature.min_pos_vert[2];
+
+	aabb.max[0] = creature.x + creature.max_pos_vert[0];
+	aabb.max[1] = creature.y + creature.max_pos_vert[1];
+	aabb.max[2] = creature.z + creature.max_pos_vert[2];
+
+	return aabb;
+}
+
 // --------------------------
+
+AABB calculateAABBFromBoat(Boat boat) {
+	AABB aabb;
+
+	aabb.min[0] = boat.getPosition()[0] - boat.getMinPosVert()[0];
+	aabb.min[1] = boat.getPosition()[1] - boat.getMinPosVert()[1];
+	aabb.min[2] = boat.getPosition()[2] - boat.getMinPosVert()[2];
+
+	aabb.max[0] = boat.getPosition()[0] + boat.getMaxPosVert()[0];
+	aabb.max[1] = boat.getPosition()[1] + boat.getMaxPosVert()[1];
+	aabb.max[2] = boat.getPosition()[2] + boat.getMaxPosVert()[2];
+
+	return aabb;
+}
+
+// --------------------------
+
+AABB calculateAABBFromMesh(MyMesh mesh) {
+	AABB aabb;
+	aabb.min[0] = mesh.xPosition - mesh.min_pos_vert[0];
+	aabb.min[1] = mesh.yPosition - mesh.min_pos_vert[1];
+	aabb.min[2] = mesh.zPosition - mesh.min_pos_vert[2];
+
+	aabb.max[0] = mesh.xPosition + mesh.max_pos_vert[0];
+	aabb.max[1] = mesh.yPosition + mesh.max_pos_vert[1];
+	aabb.max[2] = mesh.zPosition + mesh.max_pos_vert[2];
+
+	return aabb;
+}
+
+// --------------------------
+
+bool hasCollision(const AABB& aabb1, const AABB& aabb2) {
+	// Check for separation along the x-axis
+    if (aabb1.min[0] > aabb2.max[0] || aabb1.max[0] < aabb2.min[0]) {
+        return false;
+    }
+
+    // Check for separation along the y-axis
+    if (aabb1.min[1] > aabb2.max[1] || aabb1.max[1] < aabb2.min[1]) {
+        return false;
+    }
+
+    // Check for separation along the z-axis
+    if (aabb1.min[2] > aabb2.max[2] || aabb1.max[2] < aabb2.min[2]) {
+        return false;
+    }
+
+    // If there is no separation along any axis, the AABBs collide
+    return true;
+}
 
 /* Check boat's collision with water creatures - AABB */
 
 void checkCollisionCreatures(Creature creature, Boat boat) {
-    float boatX = boat.getPosition()[0];
-    float boatY = boat.getPosition()[1];
-    float boatZ = boat.getPosition()[2];
-
-    float boatMaxX = boat.getMaxPosVert()[0];
-    float boatMaxY = boat.getMaxPosVert()[1];
-    float boatMaxZ = boat.getMaxPosVert()[2];
-
-	float boatMinX = boat.getMinPosVert()[0];
-	float boatMinY = boat.getMinPosVert()[1];
-	float boatMinZ = boat.getMinPosVert()[2];
-
-    float creatureX = creature.x;
-    float creatureY = creature.y;    
-	float creatureZ = creature.z;
-
-    float creatureMaxX = creature.max_pos_vert[0];
-    float creatureMaxY = creature.max_pos_vert[1];
-    float creatureMaxZ = creature.max_pos_vert[2];
-
-	float creatureMinX = creature.min_pos_vert[0];
-	float creatureMinY = creature.min_pos_vert[1];
-	float creatureMinZ = creature.min_pos_vert[2];
+    
+	AABB boatAABB = calculateAABBFromBoat(boat);
+	AABB creatureAABB = calculateAABBFromCreatures(creature);
 
     // check if the boat collides with the creature
-    if (boatX + boatMaxX >= creatureX && creatureX + creatureMaxX >= boatX)
-		if (boatY + boatMaxY >= creatureY && creatureY + creatureMaxY >= boatY)			
+    if (hasCollision(boatAABB, creatureAABB)) {
+		lives -= 1;
 
-
-	if (boatX + boatMinX >= creatureX && creatureX + creatureMinX >= boatX) {
-		if (boatY + boatMinY >= creatureY && creatureY + creatureMinY >= boatY) {
+		if (lives == 0) {
+			gameOver = true;
 			boat.stop();
-			boat.setPosition(0.0f, 10.0f, 0.0f);
+		} else {
+			boat.stop();
+			boat.setPosition(0.0f, 5.0f, 0.0f);
 		}
 	}
+
 }
 
 /* Check collisions with MyMeshes objects */
 
 void checkCollisionMeshes(MyMesh mesh, Boat boat) {
-    float boatX = boat.getPosition()[0];
-    float boatY = boat.getPosition()[1];
-    float boatZ = boat.getPosition()[2];
 
-    float boatMaxX = boat.getMaxPosVert()[0];
-    float boatMaxY = boat.getMaxPosVert()[1];
-    float boatMaxZ = boat.getMaxPosVert()[2];
-
-	float boatMinX = boat.getMinPosVert()[0];
-	float boatMinY = boat.getMinPosVert()[1];
-	float boatMinZ = boat.getMinPosVert()[2];
-
-	float meshX = mesh.xPosition;
-	float meshY = mesh.yPosition;
-	float meshZ = mesh.zPosition;
-
-	float meshMaxX = mesh.max_pos_vert[0];
-	float meshMaxY = mesh.max_pos_vert[1];
-	float meshMaxZ = mesh.max_pos_vert[2];
-
-	float meshMinX = mesh.min_pos_vert[0];
-	float meshMinY = mesh.min_pos_vert[1];
-	float meshMinZ = mesh.min_pos_vert[2];
+	AABB boatAABB = calculateAABBFromBoat(boat);
+	AABB meshAABB = calculateAABBFromMesh(mesh);
 
 	// check if the boat collides with the mesh
-	if (boatX + boatMaxX >= meshX && meshX + meshMaxX >= boatX)
-		if (boatY + boatMaxY >= meshY && meshY + meshMaxY >= boatY)
-
-	if (boatX + boatMinX >= meshX && meshX + meshMinX >= boatX) {
-		if (boatY + boatMinY >= meshY && meshY + meshMinY >= boatY) {
-			// move slightly the mesh to avoid collision
+	if (hasCollision(boatAABB, meshAABB) && (mesh.name == "house" || mesh.name == "obstacle")) {
+		// move slightly the mesh to avoid collision
+		while (hasCollision(boatAABB, meshAABB)) {
+			printf("\n Mesh: %s \n", mesh.name.c_str());
+			printf("\n Mesh x,y,z %f %f %f \n", mesh.xPosition, mesh.yPosition, mesh.zPosition);
+			printf("\n Boat x,y,z %f %f %f \n", boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2]);
+			printf("\n COLLISION DETECTED GREEN ISLAND \n");
 			boat.stop();
-			mesh.xPosition += 0.2f;
-			mesh.yPosition += 0.2f;
+			mesh.xPosition += 0.5f;
+			mesh.zPosition += 0.5f;
+			meshAABB = calculateAABBFromMesh(mesh);
 		}
 	}
 }
 
 void timer(int value)
 {
-	//// creature timer
-	//globalTime += 0.016f;
-	//if (globalTime > creatureSpeedIncreaseTime) {
-	//	creatureSpeedMultiplier += 0.1f;  // increase speed by 10%
-	//	globalTime = 0.0f;        // reset timer
-	//}
-
 	std::ostringstream oss;
 	oss << CAPTION << ": " << FrameCount << " FPS @ (" << WinX << "x" << WinY << ")";
 	std::string s = oss.str();
@@ -276,22 +312,35 @@ void changeSize(int w, int h) {
 
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
+	
 	loadIdentity(PROJECTION);
 
-	//switch (activeCam) {
-	//case 0:
-	//	perspective(53.13f, ratio, 0.1f, 1000.0f);
-	//	break;
-	//case 1:
-	//	ortho(-10.0f, 10.0f, -10.0f / ratio, 10.0f / ratio, 0.1f, 1000.0f);
-	//	break;
-	//}
-	perspective(53.13f, ratio, 0.1f, 1000.0f); // VERIFICAR SE NÃO LEVA Switch(activeCam)
+	perspective(53.13f, ratio, 0.1f, 1000.0f); 
 }
+
+void renderHUD() {
+
+	glUseProgram(shaderText.getProgramIndex());
+
+	// render text
+	RenderText(shaderText, "Lives: " + to_string(lives), 10.0f, 10.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+	RenderText(shaderText, "Elapsed Time: " + to_string(elapsedTime), 10.0f, 30.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+
+
+	if (gameOver) {
+		RenderText(shaderText, "Game Over", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Press 'R' to restart", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+	} else if (isPaused) {
+		RenderText(shaderText, "Paused", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Press 'P' to resume", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+	}
+
+}
+
 
 // ------------------------------------------------------------
 //
-// Render stufff
+// Render stuff
 //
 
 void renderScene(void) {
@@ -317,308 +366,316 @@ void renderScene(void) {
 
 	FrameCount++;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-
-	// set the camera using a function similar to gluLookAt
-	lookAt(
-		cams[activeCam].camPos[0],
-		cams[activeCam].camPos[1],
-		cams[activeCam].camPos[2],
-		cams[activeCam].camTarget[0],
-		cams[activeCam].camTarget[1],
-		cams[activeCam].camTarget[2],
-		0, 1, 0
-	);
-
-	// use our shader
-
-	glUseProgram(shader.getProgramIndex());
-
-	fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
-	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
-	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
-
-	glUniform4fv(fogColorLoc, 1, fogColor.data());
-	glUniform1f(fogStartLoc, fogStart);
-	glUniform1f(fogDensityLoc, fogDensity);
-
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	GLfloat pointlight_ambient[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-	GLfloat pointlight_diffuse[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-	GLfloat pointlight_specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-	float counter = 0;
-
-	loc = glGetUniformLocation(shader.getProgramIndex(), "spotlight_mode");
-	if (spot_trigger)
-		glUniform1i(loc, 1);
-	else
-		glUniform1i(loc, 0);
-
-	loc = glGetUniformLocation(shader.getProgramIndex(), "pointlight_mode");
-	if (point_trigger)
-		glUniform1i(loc, 1);
-	else
-		glUniform1i(loc, 0);
-
-	loc = glGetUniformLocation(shader.getProgramIndex(), "dirlight_mode");
-	if (direct_trigger)
-		glUniform1i(loc, 1);
-	else
-		glUniform1i(loc, 0);
 	
-	//Associar os Texture Units aos Objects Texture
-	//agua.png loaded in TU0; stone.tga loaded in TU1;  lightwood.tga loaded in TU2
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+	if (!isPaused && !gameOver) {
+		
+		// load identity matrices
+		loadIdentity(VIEW);
+		loadIdentity(MODEL);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
-	
-	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-	glUniform1i(tex_loc, 0);
-	glUniform1i(tex_loc1, 1);
-	glUniform1i(tex_loc2, 2);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {		
-		multMatrixPoint(VIEW, pointLightsPos[i], res);   //light position in eye coordinates
-		glUniform4fv(lPos_uniformId[i], 1, res);
-
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.ambient").c_str()), (pointlight_ambient[0] + counter) * 0.1f, (pointlight_ambient[1] + counter) * 0.1f, (pointlight_ambient[2] + counter) * 0.1f, pointlight_ambient[3]);
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), (pointlight_diffuse[0] + counter), (pointlight_diffuse[1] + counter), (pointlight_diffuse[2] + counter), pointlight_diffuse[3]);
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.specular").c_str()), (pointlight_specular[0] + counter), (pointlight_specular[1] + counter), (pointlight_specular[2] + counter), pointlight_specular[3]);
-		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
-		counter += 0.1f;
-		glLightfv(GL_LIGHT1 + i, GL_AMBIENT, pointlight_ambient);
-		glLightfv(GL_LIGHT1 + i, GL_DIFFUSE, pointlight_diffuse);
-		glLightfv(GL_LIGHT1 + i, GL_SPECULAR, pointlight_specular);
-		glLightfv(GL_LIGHT1 + i, GL_POSITION, pointLightsPos[i]);
-	}
-
-	GLfloat spotLights_ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	GLfloat spotLights_diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	GLfloat spotLights_specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-	for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
-		multMatrixPoint(VIEW, spotLightsPos[i], res);
-		glUniform4fv(sPos_uniformId[i], 1, res);
-
-		float res_aux[4] = { boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2], 1.0f };
-		multMatrixPoint(VIEW, /*boat.getDirection()*/ res_aux, res); // DANGER
-		glUniform4fv(sDir_uniformId[i], 1, res);
-		glUniform1f(sCut_uniformId[i], 0.2f);
-
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.ambient").c_str()), spotLights_ambient[0], spotLights_ambient[1], spotLights_ambient[2], spotLights_ambient[3]);
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), spotLights_diffuse[0], spotLights_diffuse[1], spotLights_diffuse[2], spotLights_diffuse[3]);
-		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.specular").c_str()), spotLights_specular[0], spotLights_specular[1], spotLights_specular[2], spotLights_specular[3]);
-		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
-
-		glLightfv(GL_LIGHT2 + i, GL_AMBIENT, spotLights_ambient);
-		glLightfv(GL_LIGHT2 + i, GL_DIFFUSE, spotLights_diffuse);
-		glLightfv(GL_LIGHT2 + i, GL_SPECULAR, spotLights_specular);
-		glLightfv(GL_LIGHT2 + i, GL_POSITION, spotLightsPos[i]);
-	}
-
-	multMatrixPoint(VIEW, dirLightPos, res);
-	glUniform4fv(dPos_uniformId, 1, res);
-	GLfloat dirLight_ambient[4] = {0.3f, 0.24f, 0.14f, 1.0f};
-	GLfloat dirLight_diffuse[4] = {0.7f, 0.45f, 0.30f, 1.0f};
-	GLfloat dirLight_specular[4]= {0.5f, 0.5f, 0.5f, 1.0f};
-	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.ambient"), dirLight_ambient[0], dirLight_ambient[1], dirLight_ambient[2], dirLight_ambient[3]);
-	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.diffuse"), dirLight_diffuse[0], dirLight_diffuse[1], dirLight_diffuse[2], dirLight_diffuse[3]);
-	glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.specular"), dirLight_specular[0], dirLight_specular[1], dirLight_specular[2], dirLight_specular[3]);
-	glUniform1f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.shininess"), 100.0f);
-
-	glLightfv(GL_LIGHT0, GL_AMBIENT, dirLight_ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, dirLight_diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, dirLight_specular);
-	glLightfv(GL_LIGHT0, GL_POSITION, dirLightPos);	
-	
-	for (int i = 0; i < myMeshes.size(); i++) {
-		checkCollisionMeshes(myMeshes[i], boat);
-	}
-
-		// Check collision with objects in the scene
-    for (int i = 0; i < creatures.size(); i++) {
-		checkCollisionCreatures(creatures[i], boat);
-	}
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-
-	for (int i = 0; i < myMeshes.size(); i++) {
-
-		MyMesh currMesh = myMeshes[i];
-
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, currMesh.mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, currMesh.mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, currMesh.mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, currMesh.mat.shininess);
-
-		pushMatrix(MODEL);
-		if (currMesh.name == "terrain") {
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
-		}
-		else if (currMesh.name == "water") {
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
-			translate(MODEL, 0.0f, 0.0f, 0.05f);
-		}
-		else if (currMesh.name == "house") {
-			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
-		}
-		else if (currMesh.name == "obstacle") {
-			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
-		}
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		if (currMesh.name == "water") {
-			glUniform1i(texMode_uniformId, 1);
-		}
-		else if (currMesh.name == "terrain") {
-			glUniform1i(texMode_uniformId, 2);
-		}
-		else {
-			glUniform1i(texMode_uniformId, 0);
-		}
-
-		// Render mesh
-		glBindVertexArray(currMesh.vao);
-
-		glDrawElements(currMesh.type, currMesh.numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-	}
-
-	for (int i = 0; i < myModels.size(); i++) {
-		MyModel currModel = myModels[i];
-
-		pushMatrix(MODEL);
-
-		if (currModel.name == "boat") {
-			GLfloat boatAmbient[] = { 0.3f, 0.15f, 0.05f, 1.0f };
-			GLfloat boatDiffuse[] = { 0.6f, 0.5f, 0.3f, 1.0f };
-			GLfloat boatSpecular[] = { 0.1f, 0.05f, 0.025f, 1.0f };
-			GLfloat boatShininess = 10.0f;
-
-			GLint loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, boatAmbient);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, boatDiffuse);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, boatSpecular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, boatShininess);
-
-			boat.render(MODEL);
-			boat.update(deltaTime);
-			cams[activeCam].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, mouseMovingWhilePressed);
-			cams[2].computeCameraAngles();
-		}
-
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		glUniform1i(texMode_uniformId, 0);
-		glBindVertexArray(currModel.VAO);
-		glDrawElements(GL_TRIANGLES, currModel.indexCount, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-	}
-
-	glDepthMask(GL_FALSE);
-	for (int i = 0; i < creatures.size(); i++) {
-		Creature& currCreature = creatures[i];
-
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, currCreature.mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, currCreature.mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, currCreature.mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, currCreature.mat.shininess);
-
-		currCreature.update(deltaTime, creatureSpeedMultiplier, creatureMaxDistance, creatureRadius);
-		currCreature.applyShakeAnimation(seconds, creatureShakeAmplitude);
-
-		pushMatrix(MODEL);
-
-		translate(
-			MODEL,
-			currCreature.x,
-			currCreature.y,
-			currCreature.z
+		// set the camera using a function similar to gluLookAt
+		lookAt(
+			cams[activeCam].camPos[0],
+			cams[activeCam].camPos[1],
+			cams[activeCam].camPos[2],
+			cams[activeCam].camTarget[0],
+			cams[activeCam].camTarget[1],
+			cams[activeCam].camTarget[2],
+			0, 1, 0
 		);
 
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+		// use our shader
 
-		glUniform1i(texMode_uniformId, 0);
-		glBindVertexArray(currCreature.vao);
-		glDrawElements(GL_TRIANGLES, currCreature.numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		glUseProgram(shader.getProgramIndex());
 
+		fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
+		fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
+		fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
+
+		glUniform4fv(fogColorLoc, 1, fogColor.data());
+		glUniform1f(fogStartLoc, fogStart);
+		glUniform1f(fogDensityLoc, fogDensity);
+
+		//send the light position in eye coordinates
+		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+
+		float res[4];
+		GLfloat pointlight_ambient[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+		GLfloat pointlight_diffuse[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+		GLfloat pointlight_specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+		float counter = 0;
+
+		loc = glGetUniformLocation(shader.getProgramIndex(), "spotlight_mode");
+		if (spot_trigger)
+			glUniform1i(loc, 1);
+		else
+			glUniform1i(loc, 0);
+
+		loc = glGetUniformLocation(shader.getProgramIndex(), "pointlight_mode");
+		if (point_trigger)
+			glUniform1i(loc, 1);
+		else
+			glUniform1i(loc, 0);
+
+		loc = glGetUniformLocation(shader.getProgramIndex(), "dirlight_mode");
+		if (direct_trigger)
+			glUniform1i(loc, 1);
+		else
+			glUniform1i(loc, 0);
+		
+		//Associar os Texture Units aos Objects Texture
+		//agua.png loaded in TU0; stone.tga loaded in TU1;  lightwood.tga loaded in TU2
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+		
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		for (int i = 0; i < NUM_POINT_LIGHTS; i++) {		
+			multMatrixPoint(VIEW, pointLightsPos[i], res);   //light position in eye coordinates
+			glUniform4fv(lPos_uniformId[i], 1, res);
+
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.ambient").c_str()), (pointlight_ambient[0] + counter) * 0.1f, (pointlight_ambient[1] + counter) * 0.1f, (pointlight_ambient[2] + counter) * 0.1f, pointlight_ambient[3]);
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), (pointlight_diffuse[0] + counter), (pointlight_diffuse[1] + counter), (pointlight_diffuse[2] + counter), pointlight_diffuse[3]);
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.specular").c_str()), (pointlight_specular[0] + counter), (pointlight_specular[1] + counter), (pointlight_specular[2] + counter), pointlight_specular[3]);
+			glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("pointLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+			counter += 0.1f;
+			glLightfv(GL_LIGHT1 + i, GL_AMBIENT, pointlight_ambient);
+			glLightfv(GL_LIGHT1 + i, GL_DIFFUSE, pointlight_diffuse);
+			glLightfv(GL_LIGHT1 + i, GL_SPECULAR, pointlight_specular);
+			glLightfv(GL_LIGHT1 + i, GL_POSITION, pointLightsPos[i]);
+		}
+
+		GLfloat spotLights_ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		GLfloat spotLights_diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		GLfloat spotLights_specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+		for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+			multMatrixPoint(VIEW, spotLightsPos[i], res);
+			glUniform4fv(sPos_uniformId[i], 1, res);
+
+			float res_aux[4] = { boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2], 1.0f };
+			multMatrixPoint(VIEW, /*boat.getDirection()*/ res_aux, res); // DANGER
+			glUniform4fv(sDir_uniformId[i], 1, res);
+			glUniform1f(sCut_uniformId[i], 0.2f);
+
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.ambient").c_str()), spotLights_ambient[0], spotLights_ambient[1], spotLights_ambient[2], spotLights_ambient[3]);
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.diffuse").c_str()), spotLights_diffuse[0], spotLights_diffuse[1], spotLights_diffuse[2], spotLights_diffuse[3]);
+			glUniform4f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.specular").c_str()), spotLights_specular[0], spotLights_specular[1], spotLights_specular[2], spotLights_specular[3]);
+			glUniform1f(glGetUniformLocation(shader.getProgramIndex(), (const GLchar*)("spotLightsPos[" + to_string(i) + "].materials.shininess").c_str()), 100.0f);
+
+			glLightfv(GL_LIGHT2 + i, GL_AMBIENT, spotLights_ambient);
+			glLightfv(GL_LIGHT2 + i, GL_DIFFUSE, spotLights_diffuse);
+			glLightfv(GL_LIGHT2 + i, GL_SPECULAR, spotLights_specular);
+			glLightfv(GL_LIGHT2 + i, GL_POSITION, spotLightsPos[i]);
+		}
+
+		multMatrixPoint(VIEW, dirLightPos, res);
+		glUniform4fv(dPos_uniformId, 1, res);
+		GLfloat dirLight_ambient[4] = {0.3f, 0.24f, 0.14f, 1.0f};
+		GLfloat dirLight_diffuse[4] = {0.7f, 0.45f, 0.30f, 1.0f};
+		GLfloat dirLight_specular[4]= {0.5f, 0.5f, 0.5f, 1.0f};
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.ambient"), dirLight_ambient[0], dirLight_ambient[1], dirLight_ambient[2], dirLight_ambient[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.diffuse"), dirLight_diffuse[0], dirLight_diffuse[1], dirLight_diffuse[2], dirLight_diffuse[3]);
+		glUniform4f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.specular"), dirLight_specular[0], dirLight_specular[1], dirLight_specular[2], dirLight_specular[3]);
+		glUniform1f(glGetUniformLocation(shader.getProgramIndex(), "dirLightPos.materials.shininess"), 100.0f);
+
+		glLightfv(GL_LIGHT0, GL_AMBIENT, dirLight_ambient);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, dirLight_diffuse);
+		glLightfv(GL_LIGHT0, GL_SPECULAR, dirLight_specular);
+		glLightfv(GL_LIGHT0, GL_POSITION, dirLightPos);	
+
+		for (int i = 0; i < myMeshes.size(); i++) {
+			checkCollisionMeshes(myMeshes[i], boat);
+		}
+
+		for (int i = 0; i < creatures.size(); i++) {						
+			checkCollisionCreatures(creatures[i], boat);
+		}
+
+		int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
+		for (int i = 0; i < myMeshes.size(); i++) {
+
+			MyMesh currMesh = myMeshes[i];
+
+			// send the material
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+			glUniform4fv(loc, 1, currMesh.mat.ambient);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+			glUniform4fv(loc, 1, currMesh.mat.diffuse);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+			glUniform4fv(loc, 1, currMesh.mat.specular);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+			glUniform1f(loc, currMesh.mat.shininess);
+
+			pushMatrix(MODEL);
+			if (currMesh.name == "terrain") {
+				rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			}
+			else if (currMesh.name == "water") {
+				rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+				translate(MODEL, 0.0f, 0.0f, 0.05f);
+			}
+			else if (currMesh.name == "house") {
+				translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+			}
+			else if (currMesh.name == "obstacle") {
+				translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+			}
+
+			// send matrices to OGL
+			computeDerivedMatrix(PROJ_VIEW_MODEL);
+			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+			computeNormalMatrix3x3();
+			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+			if (currMesh.name == "water") {
+				glUniform1i(texMode_uniformId, 1);
+			}
+			else if (currMesh.name == "terrain") {
+				glUniform1i(texMode_uniformId, 2);
+			}
+			else {
+				glUniform1i(texMode_uniformId, 0);
+			}
+
+			// Render mesh
+			glBindVertexArray(currMesh.vao);
+
+			glDrawElements(currMesh.type, currMesh.numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+
+			popMatrix(MODEL);
+		}
+
+		for (int i = 0; i < myModels.size(); i++) {
+			MyModel currModel = myModels[i];
+
+			pushMatrix(MODEL);
+
+			if (currModel.name == "boat") {
+				GLfloat boatAmbient[] = { 0.3f, 0.15f, 0.05f, 1.0f };
+				GLfloat boatDiffuse[] = { 0.6f, 0.5f, 0.3f, 1.0f };
+				GLfloat boatSpecular[] = { 0.1f, 0.05f, 0.025f, 1.0f };
+				GLfloat boatShininess = 10.0f;
+
+				GLint loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+				glUniform4fv(loc, 1, boatAmbient);
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+				glUniform4fv(loc, 1, boatDiffuse);
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+				glUniform4fv(loc, 1, boatSpecular);
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+				glUniform1f(loc, boatShininess);
+
+				boat.render(MODEL);
+				boat.update(deltaTime);
+				cams[activeCam].followBoat(boat.getPosition(), boat.getDirection(), activeCam != 2, mouseMovingWhilePressed);
+				cams[2].computeCameraAngles();
+			}
+
+			computeDerivedMatrix(PROJ_VIEW_MODEL);
+			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+			computeNormalMatrix3x3();
+			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+			glUniform1i(texMode_uniformId, 0);
+			glBindVertexArray(currModel.VAO);
+			glDrawElements(GL_TRIANGLES, currModel.indexCount, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+
+			popMatrix(MODEL);
+		}
+
+		glDepthMask(GL_FALSE);
+
+		for (int i = 0; i < creatures.size(); i++) {
+			Creature& currCreature = creatures[i];
+
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+			glUniform4fv(loc, 1, currCreature.mat.ambient);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+			glUniform4fv(loc, 1, currCreature.mat.diffuse);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+			glUniform4fv(loc, 1, currCreature.mat.specular);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+			glUniform1f(loc, currCreature.mat.shininess);
+
+			currCreature.update(deltaTime, creatureSpeedMultiplier, creatureMaxDistance, creatureRadius);
+			currCreature.applyShakeAnimation(seconds, creatureShakeAmplitude);
+
+			pushMatrix(MODEL);
+
+			translate(
+				MODEL,
+				currCreature.x,
+				currCreature.y,
+				currCreature.z
+			);
+
+			computeDerivedMatrix(PROJ_VIEW_MODEL);
+			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+			computeNormalMatrix3x3();
+			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+			glUniform1i(texMode_uniformId, 0);
+			glBindVertexArray(currCreature.vao);
+			glDrawElements(GL_TRIANGLES, currCreature.numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+
+			popMatrix(MODEL);
+		}
+
+		glDepthMask(GL_TRUE);
+
+		//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
+		//glDisable(GL_DEPTH_TEST);
+		//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
+
+		int m_viewport[4];
+		glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+		// viewer at origin looking down at  negative z direction
+		pushMatrix(MODEL);
+		loadIdentity(MODEL);
+		pushMatrix(PROJECTION);
+		loadIdentity(PROJECTION);
+
+		int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
+		if (cams[activeCam].type == PERSPECTIVE) {
+			perspective(53.13f, ratio, 1, 100);
+		} else {
+			ortho(ratio * -25, ratio * 25, -25, 25, 0.1, 100);
+		}
+
+		pushMatrix(VIEW);
+		loadIdentity(VIEW);
+		RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+		RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+		popMatrix(PROJECTION);
+		popMatrix(VIEW);
 		popMatrix(MODEL);
+		//glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
 	}
-	glDepthMask(GL_TRUE);
-
-	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
-	//glDisable(GL_DEPTH_TEST);
-	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
-
-	int m_viewport[4];
-	glGetIntegerv(GL_VIEWPORT, m_viewport);
-
-	// viewer at origin looking down at  negative z direction
-	pushMatrix(MODEL);
-	loadIdentity(MODEL);
-	pushMatrix(PROJECTION);
-	loadIdentity(PROJECTION);
-
-	int ratio = m_viewport[2] - m_viewport[0] / (m_viewport[3] - m_viewport[1]);
-	if (cams[activeCam].type == PERSPECTIVE) {
-		perspective(53.13f, ratio, 1, 100);
-	} else {
-		ortho(ratio * -25, ratio * 25, -25, 25, 0.1, 100);
-	}
-
-	pushMatrix(VIEW);
-	loadIdentity(VIEW);
-	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
-	popMatrix(PROJECTION);
-	popMatrix(VIEW);
-	popMatrix(MODEL);
-	//glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
+	
+	// render HUD
+	renderHUD();	
 
 	glutSwapBuffers();
 }
@@ -719,6 +776,32 @@ void processKeys(unsigned char key, int xx, int yy)
 		case 'O':
 			boat.toggleTurboMode();
 			break;
+
+		case 'p':
+		case 'P':
+			if (isPaused) {
+				printf("Game resumed!\n");
+				startTime = std::chrono::high_resolution_clock::now();
+			}
+			else {
+				printf("Game paused!\n");
+				auto currentTime = std::chrono::high_resolution_clock::now();
+				elapsedTime += std::chrono::duration<float>(currentTime - startTime).count();
+			}
+
+			isPaused = !isPaused;
+			break;
+
+		case 'r':
+		case 'R':
+			if (gameOver) {
+				lives = 5;
+				points = 0;
+				elapsedTime = 0.0f;
+				startTime = std::chrono::high_resolution_clock::now();
+				gameOver = false;
+				printf("Game restarted!\n");
+			} // CORRECT RESTART
 
 		case 27:
 			glutLeaveMainLoop();
@@ -976,6 +1059,7 @@ void init()
 int main(int argc, char **argv) {
 
 	lastTime = std::chrono::high_resolution_clock::now();
+	startTime = std::chrono::high_resolution_clock::now();
 
 	//  GLUT initialization
 	glutInit(&argc, argv);

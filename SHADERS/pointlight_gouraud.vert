@@ -52,7 +52,7 @@ in vec4 normal;    //por causa do gerador de geometria
 
 out Data {
 	vec4 color;
-	vecc2 texCoord;
+	vec2 texCoord;
 } DataOut;
 
 vec4 CalcDirLight(DirectionalLight dirLight, vec3 n, vec3 e)
