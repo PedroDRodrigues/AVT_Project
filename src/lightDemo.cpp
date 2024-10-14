@@ -164,6 +164,8 @@ int points = 0;
 std::chrono::high_resolution_clock::time_point startTime, currentTime;
 float elapsedTime = 0.0f;
 
+// save the state of the boat : collisiding - true, not colliding - false
+bool boatColliding = false;
 
 AABB calculateAABBFromCreatures(Creature creature) {
 	AABB aabb;
@@ -236,29 +238,32 @@ bool hasCollision(const AABB& aabb1, const AABB& aabb2) {
 
 void checkCollisionCreatures(Creature creature, Boat boat) {
     
+	if (boatColliding) {
+		return;
+	}
+
 	AABB boatAABB = calculateAABBFromBoat(boat);
 	AABB creatureAABB = calculateAABBFromCreatures(creature);
 
     // check if the boat collides with the creature
     if (hasCollision(boatAABB, creatureAABB)) {
+		printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCollision with creature detected.\n");
+		printf("Collision points are: %f %f %f\n", creature.x, creature.y, creature.z);
+		printf("Boat points are: %f %f %f\n", boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2]);
+
 		if (lives == 1) {
 			gameOver = true;
-			boat.stop();
 		} else if (lives > 1) {
+			boatColliding = true;
 			boat.stop();
-			boat.setPosition(0.0f, 5.0f, 0.0f);
 		} else {
-			printf("\n Error on score: lives number if not allowed. \n");
+			printf("\n Error on score: lives number if not allowed.\n");
 		}
 
 		lives = lives - 1;
 		printf("Collision with creature detected.\n");
 		printf("\n Lives: %d \n", lives);
-
-		// Move creature out of the way
-		creature.rebirth(creatureRadius);
 	}
-
 }
 
 /* Check collisions with MyMeshes objects */
@@ -343,17 +348,15 @@ void renderHUD() {
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	
 	if (gameOver) {
-		RenderText(shaderText, "Game Over", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-		RenderText(shaderText, "Press 'R' to restart", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Game Over", 10.0f, 80.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Press 'R' to restart", 10.0f, 110.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 	} else if (isPaused) {
-		RenderText(shaderText, "Paused", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-		RenderText(shaderText, "Press 'P' to resume", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Paused", 10.0f, 80.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Press 'P' to resume", 10.0f, 110.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 	}
-	else {
-		// render text
-		RenderText(shaderText, "Lives: " + to_string(lives), 10.0f, 10.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-		RenderText(shaderText, "Elapsed Time: " + to_string(elapsedTime), 10.0f, 30.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-	}
+	
+	RenderText(shaderText, "Lives: " + to_string(lives), 10.0f, 20.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+	RenderText(shaderText, "Elapsed Time: " + to_string(elapsedTime), 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 
 	popMatrix(MODEL);
 	popMatrix(PROJECTION);
@@ -525,6 +528,17 @@ void renderScene(void) {
 
 		for (int i = 0; i < myMeshes.size(); i++) {
 			checkCollisionMeshes(myMeshes[i], boat);
+		}
+
+		if (boatColliding) {
+			boatColliding = false;
+
+			// Explosion needs to be handled here - particles code
+
+			// Wait some seconds here to particles animation could be seen
+
+			// Restart boat position
+			boat.setPosition(0.0f, 5.0f, 0.0f);
 		}
 
 		for (int i = 0; i < creatures.size(); i++) {						

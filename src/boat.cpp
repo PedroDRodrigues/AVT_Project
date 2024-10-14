@@ -148,7 +148,5 @@ void Boat::stop() {
 }
 
 void Boat::setPosition(float x, float y, float z) {
-    position[0] = x;
-    position[1] = y;
-    position[2] = z;
+    position = { x, y, z };
 }

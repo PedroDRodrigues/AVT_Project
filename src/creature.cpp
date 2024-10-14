@@ -44,13 +44,13 @@ Creature createCreatureMesh(float radius, float initialSpeed) {
     amesh.y = y;
     amesh.z = z;
 
-    amesh.max_pos_vert[0] = 1.0f;
-    amesh.max_pos_vert[1] = 1.0f;
-    amesh.max_pos_vert[2] = 1.0f;
+    amesh.max_pos_vert[0] = 1.5f;
+    amesh.max_pos_vert[1] = 1.5f;
+    amesh.max_pos_vert[2] = 1.5f;
 
-    amesh.min_pos_vert[0] = 1.0f;
-    amesh.min_pos_vert[1] = 1.0f;
-    amesh.min_pos_vert[2] = 1.0f;
+    amesh.min_pos_vert[0] = 1.5f;
+    amesh.min_pos_vert[1] = 1.5f;
+    amesh.min_pos_vert[2] = 1.5f;
 
     amesh.oscillationSpeed = randomFloat(1.0f, 2.5f);
 
