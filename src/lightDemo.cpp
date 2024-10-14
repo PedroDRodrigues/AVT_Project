@@ -241,15 +241,22 @@ void checkCollisionCreatures(Creature creature, Boat boat) {
 
     // check if the boat collides with the creature
     if (hasCollision(boatAABB, creatureAABB)) {
-		lives -= 1;
-
-		if (lives == 0) {
+		if (lives == 1) {
 			gameOver = true;
 			boat.stop();
-		} else {
+		} else if (lives > 1) {
 			boat.stop();
 			boat.setPosition(0.0f, 5.0f, 0.0f);
+		} else {
+			printf("\n Error on score: lives number if not allowed. \n");
 		}
+
+		lives = lives - 1;
+		printf("Collision with creature detected.\n");
+		printf("\n Lives: %d \n", lives);
+
+		// Move creature out of the way
+		creature.rebirth(creatureRadius);
 	}
 
 }
@@ -265,10 +272,6 @@ void checkCollisionMeshes(MyMesh mesh, Boat boat) {
 	if (hasCollision(boatAABB, meshAABB) && (mesh.name == "house" || mesh.name == "obstacle")) {
 		// move slightly the mesh to avoid collision
 		while (hasCollision(boatAABB, meshAABB)) {
-			printf("\n Mesh: %s \n", mesh.name.c_str());
-			printf("\n Mesh x,y,z %f %f %f \n", mesh.xPosition, mesh.yPosition, mesh.zPosition);
-			printf("\n Boat x,y,z %f %f %f \n", boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2]);
-			printf("\n COLLISION DETECTED GREEN ISLAND \n");
 			boat.stop();
 			mesh.xPosition += 0.5f;
 			mesh.zPosition += 0.5f;
@@ -320,13 +323,25 @@ void changeSize(int w, int h) {
 
 void renderHUD() {
 
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int m_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+
 	glUseProgram(shaderText.getProgramIndex());
 
-	// render text
-	RenderText(shaderText, "Lives: " + to_string(lives), 10.0f, 10.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-	RenderText(shaderText, "Elapsed Time: " + to_string(elapsedTime), 10.0f, 30.0f, 0.5f, 1.0f, 1.0f, 1.0f);
-
-
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+	pushMatrix(PROJECTION);
+	loadIdentity(PROJECTION);
+	pushMatrix(VIEW);
+	loadIdentity(VIEW);
+	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+	
 	if (gameOver) {
 		RenderText(shaderText, "Game Over", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 		RenderText(shaderText, "Press 'R' to restart", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
@@ -334,7 +349,19 @@ void renderHUD() {
 		RenderText(shaderText, "Paused", 10.0f, 50.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 		RenderText(shaderText, "Press 'P' to resume", 10.0f, 70.0f, 0.5f, 1.0f, 1.0f, 1.0f);
 	}
+	else {
+		// render text
+		RenderText(shaderText, "Lives: " + to_string(lives), 10.0f, 10.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Elapsed Time: " + to_string(elapsedTime), 10.0f, 30.0f, 0.5f, 1.0f, 1.0f, 1.0f);
+	}
 
+	popMatrix(MODEL);
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
+
+	glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
 }
 
 
@@ -665,13 +692,13 @@ void renderScene(void) {
 
 		pushMatrix(VIEW);
 		loadIdentity(VIEW);
-		RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-		RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+		//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+		//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
 		popMatrix(PROJECTION);
 		popMatrix(VIEW);
 		popMatrix(MODEL);
 		//glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
+		//glDisable(GL_BLEND);
 	}
 	
 	// render HUD
