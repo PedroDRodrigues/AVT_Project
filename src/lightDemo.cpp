@@ -43,12 +43,18 @@
 #include "include/creature.h"
 #include "include/globals.h"
 #include "include/utils.h"
+//#include "include/l3dBillboard.h"
+//#include "include/meshFromAssimp.h"
 
 using namespace std;
 
 #define NUM_POINT_LIGHTS 6
 #define NUM_SPOT_LIGHTS 2
 #define DEG2RAD 3.14/180.0f
+
+#define frand()			((float)rand()/RAND_MAX)
+#define M_PI			3.14159265
+#define MAX_PARTICULAS  1500
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 int WindowHandle = 0;
@@ -102,7 +108,7 @@ GLint dPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
 
-GLuint TextureArray[3];
+GLuint TextureArray[4];
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -166,6 +172,77 @@ float elapsedTime = 0.0f;
 
 // save the state of the boat : collisiding - true, not colliding - false
 bool boatColliding = false;
+
+// fireworks particles
+int fireworks = 0;
+
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posi��o
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // acelera��o
+} Particle;
+
+Particle particula[MAX_PARTICULAS];
+int dead_num_particles = 0;
+
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* M�todo de Euler de integra��o de eq. diferenciais ordin�rias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < MAX_PARTICULAS; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
+void iniParticles(void)
+{
+	GLfloat v, theta, phi;
+	int i;
+
+	for (i = 0; i < MAX_PARTICULAS; i++)
+	{
+		v = 0.8 * frand() + 0.2;
+		phi = frand() * M_PI;
+		theta = 2.0 * frand() * M_PI;
+
+		particula[i].x = 0.0f;
+		particula[i].y = 10.0f;
+		particula[i].z = 0.0f;
+		particula[i].vx = v * cos(theta) * sin(phi);
+		particula[i].vy = v * cos(phi);
+		particula[i].vz = v * sin(theta) * sin(phi);
+		particula[i].ax = 0.1f; /* simular um pouco de vento */
+		particula[i].ay = -0.15f; /* simular a acelera��o da gravidade */
+		particula[i].az = 0.0f;
+
+		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
+		particula[i].r = 0.882f;
+		particula[i].g = 0.552f;
+		particula[i].b = 0.211f;
+
+		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].fade = 0.0025f;	    /* step de decr�scimo da vida para cada itera��o */
+	}
+}
 
 AABB calculateAABBFromCreatures(Creature creature) {
 	AABB aabb;
@@ -247,9 +324,6 @@ void checkCollisionCreatures(Creature creature, Boat boat) {
 
     // check if the boat collides with the creature
     if (hasCollision(boatAABB, creatureAABB)) {
-		printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCollision with creature detected.\n");
-		printf("Collision points are: %f %f %f\n", creature.x, creature.y, creature.z);
-		printf("Boat points are: %f %f %f\n", boat.getPosition()[0], boat.getPosition()[1], boat.getPosition()[2]);
 
 		if (lives == 1) {
 			gameOver = true;
@@ -261,8 +335,6 @@ void checkCollisionCreatures(Creature creature, Boat boat) {
 		}
 
 		lives = lives - 1;
-		printf("Collision with creature detected.\n");
-		printf("\n Lives: %d \n", lives);
 	}
 }
 
@@ -375,6 +447,7 @@ void renderHUD() {
 
 void renderScene(void) {
 
+	float particle_color[4];
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
 	lastTime = currentTime;
@@ -534,8 +607,22 @@ void renderScene(void) {
 			boatColliding = false;
 
 			// Explosion needs to be handled here - particles code
+			if (!fireworks) {
+				fireworks = 1;
+				iniParticles();
+			}
 
-			// Wait some seconds here to particles animation could be seen
+			if (lives == 0) {
+				// end explosion
+				// wait for a while
+
+				while (dead_num_particles < MAX_PARTICULAS) {
+					updateParticles();
+					dead_num_particles++;
+				}
+
+				fireworks = 0;
+			}
 
 			// Restart boat position
 			boat.setPosition(0.0f, 5.0f, 0.0f);
@@ -682,8 +769,67 @@ void renderScene(void) {
 			popMatrix(MODEL);
 		}
 
-		glDepthMask(GL_TRUE);
+		//glDepthMask(GL_TRUE);
 
+		if (fireworks) {
+
+			updateParticles();
+
+			// draw fireworks particles
+			objId = 6;  //quad for particle
+
+			glBindTexture(GL_TEXTURE_2D, TextureArray[3]); //particle.tga associated to TU0 
+
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			glDepthMask(GL_FALSE);  //Depth Buffer Read Only
+
+			glUniform1i(texMode_uniformId, 2); // draw modulated textured particles 
+
+			for (int i = 0; i < MAX_PARTICULAS; i++)
+			{
+				if (particula[i].life > 0.0f) /* s� desenha as que ainda est�o vivas */
+				{
+
+					/* A vida da part�cula representa o canal alpha da cor. Como o blend est� activo a cor final � a soma da cor rgb do fragmento multiplicada pelo
+					alpha com a cor do pixel destino */
+
+					particle_color[0] = particula[i].r;
+					particle_color[1] = particula[i].g;
+					particle_color[2] = particula[i].b;
+					particle_color[3] = particula[i].life;
+
+					// send the material - diffuse color modulated with texture
+					loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+					glUniform4fv(loc, 1, particle_color);
+
+					pushMatrix(MODEL);
+					translate(MODEL, particula[i].x, particula[i].y, particula[i].z);
+
+					// send matrices to OGL
+					computeDerivedMatrix(PROJ_VIEW_MODEL);
+					glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+					glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+					computeNormalMatrix3x3();
+					glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+					glBindVertexArray(myMeshes[objId].vao);
+					glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+					popMatrix(MODEL);
+				}
+				else dead_num_particles++;
+			}
+
+			glDepthMask(GL_TRUE); //make depth buffer again writeable
+
+			if (dead_num_particles == MAX_PARTICULAS) {
+				fireworks = 0;
+				dead_num_particles = 0;
+				printf("All particles dead\n");
+			}
+
+		}
 		//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 		//glDisable(GL_DEPTH_TEST);
 		//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
@@ -842,7 +988,21 @@ void processKeys(unsigned char key, int xx, int yy)
 				startTime = std::chrono::high_resolution_clock::now();
 				gameOver = false;
 				printf("Game restarted!\n");
-			} // CORRECT RESTART
+			} else {
+				lives = 5;
+				points = 0;
+				elapsedTime = 0.0f;
+				startTime = std::chrono::high_resolution_clock::now();
+				printf("Game restarted!\n");
+			}
+
+		case 'f':
+		case 'F':
+			if (!fireworks) {
+				fireworks = 1;
+				iniParticles();
+			}
+			break;
 
 		case 27:
 			glutLeaveMainLoop();
@@ -1036,10 +1196,11 @@ void init()
 	freeType_init(font_name);
 	
 	//Texture Object definition
-	glGenTextures(3, TextureArray);
+	glGenTextures(4, TextureArray);
 	Texture2D_Loader(TextureArray, "agua.png", 0);
 	Texture2D_Loader(TextureArray, "relva1.png", 1);
 	Texture2D_Loader(TextureArray, "water.png", 2);
+	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	// top view cameras
 
