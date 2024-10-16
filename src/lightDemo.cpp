@@ -43,7 +43,7 @@
 #include "include/creature.h"
 #include "include/globals.h"
 #include "include/utils.h"
-//#include "include/l3dBillboard.h"
+#include "include/l3dBillboard.h"
 //#include "include/meshFromAssimp.h"
 
 using namespace std;
@@ -175,6 +175,7 @@ bool boatColliding = false;
 
 // fireworks particles
 int fireworks = 0;
+int type = 0;
 
 typedef struct {
 	float	life;		// vida
@@ -448,6 +449,8 @@ void renderHUD() {
 void renderScene(void) {
 
 	float particle_color[4];
+	float pos[3], right[3], up[3];
+
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
 	lastTime = currentTime;
@@ -769,6 +772,59 @@ void renderScene(void) {
 			popMatrix(MODEL);
 		}
 
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glUniform1i(texMode_uniformId, 1); // draw textured quads
+
+		for (int i = -5; i < 5; i++)
+			for (int j = -5; j < 5; j++) {
+				pushMatrix(MODEL);
+				translate(MODEL, 5 + i * 10.0, 0, 5 + j * 10.0);
+
+				pos[0] = 5 + i * 10.0; pos[1] = 0; pos[2] = 5 + j * 10.0;
+
+				if (type == 2)
+					l3dBillboardSphericalBegin(cams[activeCam].camPos, pos);
+				else if (type == 3)
+					l3dBillboardCylindricalBegin(cams[activeCam].camPos, pos);
+
+				objId = 62;
+
+				//diffuse and ambient color are not used in the tree quads
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+				glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+				glUniform1f(loc, myMeshes[objId].mat.shininess);
+
+				pushMatrix(MODEL);
+				translate(MODEL, 0.0, 3.0, 0.0f);
+
+				// send matrices to OGL
+				if (type == 0 || type == 1) {     //Cheating matrix reset billboard techniques
+					computeDerivedMatrix(VIEW_MODEL);
+
+					//reset VIEW_MODEL
+					if (type == 0) BillboardCheatSphericalBegin();
+					else BillboardCheatCylindricalBegin();
+
+					computeDerivedMatrix_PVM(); // calculate PROJ_VIEW_MODEL
+				}
+				else computeDerivedMatrix(PROJ_VIEW_MODEL);
+
+				glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+				glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+				computeNormalMatrix3x3();
+				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+				glBindVertexArray(myMeshes[objId].vao);
+				glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+				popMatrix(MODEL);
+
+				//	if (type==0 || type==1) // restore matrix VIEW_MODEL n�o � necess�rio pois a PVM � sempre calculada a pArtir da MODEL e da VIEW que n�o s�o ALTERADAS
+
+				popMatrix(MODEL);
+			}
+
 		//glDepthMask(GL_TRUE);
 
 		if (fireworks) {
@@ -1004,6 +1060,15 @@ void processKeys(unsigned char key, int xx, int yy)
 			}
 			break;
 
+		case '5': type++; if (type == 5) type = 0;
+			switch(type) {
+				case 0: printf("Cheating Spherical (matrix reset)\n"); break;
+				case 1: printf("Cheating Cylindrical (matrix reset)\n"); break;
+				case 2: printf("True Spherical\n"); break;
+				case 3: printf("True Cylindrical\n"); break;
+				case 4: printf("No billboarding\n"); break;
+			}
+			break;
 		case 27:
 			glutLeaveMainLoop();
 			break;
@@ -1227,6 +1292,14 @@ void init()
 
 	vector<MyMesh> obstacleMeshes = createObstacleMeshes(10, terrainSize, waterSize);
 	myMeshes.insert(myMeshes.end(), obstacleMeshes.begin(), obstacleMeshes.end());
+
+	// create quad for billboard objID = 62
+	amesh = createQuad(2.0f, 2.0f);
+	myMeshes.push_back(amesh);
+
+	// create points for particles
+	amesh = createCube();
+	myMeshes.push_back(amesh);
 
 	vector<Creature> creatureMeshes = createCreatureMeshes(numCreatures, creatureRadius, creatureInitialSpeed);
 	creatures.insert(creatures.end(), creatureMeshes.begin(), creatureMeshes.end());
