@@ -44,8 +44,8 @@
 #include "include/globals.h"
 #include "include/utils.h"
 #include "include/l3dBillboard.h"
-//#include "include/flare.h"
-//#include "include/meshFromAssimp.h"
+#include "include/flare.h"
+#include "include/meshFromAssimp.h"
 
 using namespace std;
 
@@ -59,13 +59,31 @@ using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
 
-/*inline double clamp(const double x, const double min, const double max) {
+inline double clamp(const double x, const double min, const double max) {
 	return (x < min ? min : (x > max ? max : x));
 }
 
 inline int clampi(const int x, const int min, const int max) {
 	return (x < min ? min : (x > max ? max : x));
-}*/
+}
+
+// Create an instance of the Importer class
+Assimp::Importer importer;
+
+// the global Assimp scene object
+const aiScene* scene;
+
+// scale factor for the Assimp model to fit in the window
+float scaleFactor;
+
+
+char model_dir[50];  //initialized by the user input at the console
+
+//Array of meshes 
+vector<vector<struct MyMesh>> myMeshes1; //meshes array for the spider model
+
+//Array of Texture Objects
+GLuint* textureIds;  //for the input model
 
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
@@ -75,6 +93,8 @@ unsigned int FrameCount = 0;
 //shaders
 VSShaderLib shader;  //geometry
 VSShaderLib shaderText;  //render bitmap text
+
+bool normalMapKey = TRUE;
 
 //File with the font
 const string font_name = "fonts/arial.ttf";
@@ -118,12 +138,16 @@ GLint dPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
 
+GLint normalMap_loc;
+GLint specularMap_loc;
+GLint diffMapCount_loc;
+
 GLuint TextureArray[4];
-//GLuint FlareTextureArray[5];
+GLuint FlareTextureArray[5];
 
-//FLARE_DEF AVTflare;
+FLARE_DEF AVTflare;
 
-//float lightScreenPos[3];  //Position of the light in Window Coordinates
+float lightScreenPos[3];  //Position of the light in Window Coordinates
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -187,7 +211,7 @@ float elapsedTime = 0.0f;
 
 // save the state of the boat : collisiding - true, not colliding - false
 bool boatColliding = false;
-//bool flareEffect = false;
+bool flareEffect = false;
 
 // fireworks particles
 int fireworks = 0;
@@ -415,7 +439,7 @@ void changeSize(int w, int h) {
 	perspective(53.13f, ratio, 0.1f, 1000.0f); 
 }
 
-/*void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport) {  //lx, ly represent the projected position of light on viewport
+void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport) {  //lx, ly represent the projected position of light on viewport
 
 	int     dx, dy;          // Screen coordinates of "destination"
 	int     px, py;          // Screen coordinates of flare element
@@ -453,9 +477,9 @@ void changeSize(int w, int h) {
 	// Render each element. To be used Texture Unit 0
 
 	glUniform1i(texMode_uniformId, 3); // draw modulated textured particles 
-	glUniform1i(tex_loc, 0); */ //use TU 0
+	glUniform1i(tex_loc, 0);  //use TU 0
 
-	/*for (i = 0; i < flare->nPieces; ++i)
+	for (i = 0; i < flare->nPieces; ++i)
 	{
 		// Position is interpolated along line between start and destination.
 		px = (int)((1.0f - flare->element[i].fDistance) * lx + flare->element[i].fDistance * dx);
@@ -499,7 +523,7 @@ void changeSize(int w, int h) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
-}*/
+}
 
 void renderHUD() {
 
@@ -542,6 +566,215 @@ void renderHUD() {
 	glDepthMask(GL_TRUE);
 }
 
+// Recursive render of the Assimp Scene Graph
+
+void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
+{
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
+			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
+
+				//Activate a TU with a Texture Object
+				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
+				glActiveTexture(GL_TEXTURE3 + TU);
+				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
+
+				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, TU);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, TU);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// bind VAO
+		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
+	}
+	popMatrix(MODEL);
+}
+
+void renderTrees() {
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[0], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[1], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[2], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[3], textureIds);
+	popMatrix(MODEL);
+
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, 50);
+	aiRecursive_render(scene->mRootNode, myMeshes1[0], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, -50);
+	aiRecursive_render(scene->mRootNode, myMeshes1[1], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, -50);
+	aiRecursive_render(scene->mRootNode, myMeshes1[2], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, 50);
+	aiRecursive_render(scene->mRootNode, myMeshes1[3], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[0], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[1], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 70, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[2], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -70, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[3], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 50, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[0], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -50, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[1], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, 50, 0, -70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[2], textureIds);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
+	translate(MODEL, -50, 0, 70);
+	aiRecursive_render(scene->mRootNode, myMeshes1[3], textureIds);
+	popMatrix(MODEL);
+
+
+}
 
 // ------------------------------------------------------------
 //
@@ -737,6 +970,10 @@ void renderScene(void) {
 			checkCollisionCreatures(creatures[i], boat);
 		}
 
+		renderTrees();
+
+		glUniform1i(texMode_uniformId, 0);
+
 		int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 		for (int i = 0; i < myMeshes.size(); i++) {
@@ -926,45 +1163,40 @@ void renderScene(void) {
 
 		//glDepthMask(GL_TRUE);
 
-		glClear(GL_STENCIL_BUFFER_BIT);
+		glClear(GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glStencilFunc(GL_NEVER, 0x1, 0x1);
 		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
 
 		//// Use an orthographic projection to draw the mirror geometry
-		loadIdentity(PROJECTION);
-		ortho(-1, 1, -1, 1, -1, 1);
-		loadIdentity(VIEW);
-		loadIdentity(MODEL);
+		//loadIdentity(PROJECTION);
+		//ortho(-1, 1, -1, 1, -1, 1);
+		//loadIdentity(VIEW);
+		//loadIdentity(MODEL);
 
 		glBindVertexArray(myMeshes[64].vao);
 		glDrawElements(myMeshes[64].type, myMeshes[64].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-		loadIdentity(PROJECTION);
-		perspective(45.0f, WinX / WinY, 0.1f, 1000.0f);
+		//loadIdentity(PROJECTION);
+		//perspective(45.0f, WinX / WinY, 0.1f, 1000.0f);
 
-
-		loadIdentity(VIEW);
+		//loadIdentity(VIEW);
 		float rearCamPos[3];
 		float rearCamTarget[3];
 		float boatDirection[3] = { boat.getDirection()[0], boat.getDirection()[1], boat.getDirection()[2] };
 
-		for (int i = 0; i < 3; i++) {
-			rearCamPos[i] = boat.getPosition()[i] - boatDirection[i] * 10.0f;
-			rearCamTarget[i] = boat.getPosition()[i];
-		}
+		// rearCamPos and rearCamTarget should compute a lookAt Vector of - boat.direction 
 
-		// tirar isto e trocar rearCamPos por rearCamTarget
-		//rearCamTarget[1] += 20.0f;
-		//rearCamTarget[2] -= 20.0f;
+		rearCamPos[0] = boat.getPosition()[0];
+		rearCamPos[1] = boat.getPosition()[1];
+		rearCamPos[2] = boat.getPosition()[2];
 
+		rearCamTarget[0] = boat.getPosition()[0] - boatDirection[0];
+		rearCamTarget[1] = boat.getPosition()[1] - boatDirection[1] + 20.0f;
+		rearCamTarget[2] = boat.getPosition()[2] - boatDirection[2];
+
+		// at the same time put plan
 		lookAt(
-			//rearCamTarget[0],
-			//rearCamTarget[1],
-			//rearCamTarget[2],
-			//rearCamPos[0],
-			//rearCamPos[1],
-			//rearCamPos[2],
 			rearCamPos[0],
 			rearCamPos[1],
 			rearCamPos[2],
@@ -979,6 +1211,13 @@ void renderScene(void) {
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		//int orthoViewportWidth = WinX / 4;  // For example, make it one-fourth the width of the window
+		//int orthoViewportHeight = WinY / 4; // For example, make it one-fourth the height of the window
+		//int orthoViewportX = WinX - orthoViewportWidth - 10; // Position it near the bottom-right corner
+		//int orthoViewportY = 10;
+
+		//glViewport(orthoViewportX, orthoViewportY, orthoViewportWidth, orthoViewportHeight);
 
 		objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
@@ -1167,7 +1406,8 @@ void renderScene(void) {
 				popMatrix(MODEL);
 			}
 
-		/*if (flareEffect) {
+		//glViewport(0, 0, WinX, WinY);
+		if (flareEffect) {
 
 			int flarePos[2];
 			int m_viewport[4];
@@ -1193,7 +1433,7 @@ void renderScene(void) {
 			render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport);
 			popMatrix(PROJECTION);
 			popMatrix(VIEW);
-		}*/
+		}
 
 		if (fireworks) {
 
@@ -1422,7 +1662,7 @@ void processKeys(unsigned char key, int xx, int yy)
 			}
 			break;
 
-		/*case 'f':
+		case 'f':
 			if (flareEffect) {
 				flareEffect = false;
 				printf("Flare Effect Deactivated\n");
@@ -1431,7 +1671,7 @@ void processKeys(unsigned char key, int xx, int yy)
 				flareEffect = true;
 				printf("Flare Effect Activated\n");
 			}
-			break;*/
+			break;
 		case 'F':
 			if (!fireworks) {
 				fireworks = 1;
@@ -1601,6 +1841,10 @@ GLuint setupShaders() {
 	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
 	fogDensityLoc = glGetUniformLocation(shader.getProgramIndex(), "fogDensity");
 
+	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
+
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
 	// Shader for bitmap Text
@@ -1619,6 +1863,25 @@ GLuint setupShaders() {
 	return(shader.isProgramLinked() && shaderText.isProgramLinked());
 }
 
+void createTrees() {
+
+	std::string filepath = "tree/Tree2.obj";
+
+	//import 3D file into Assimp scene graph
+	if (!Import3DFromFile(filepath, importer, scene, scaleFactor))
+		return;
+
+	for (int i = 0; i < 50; i++) {
+		//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the model input by the user
+		vector<struct MyMesh> tree = createMeshFromAssimp(scene, textureIds);
+
+		myMeshes1.push_back(tree);
+
+	}
+
+	strcpy(model_dir, "tree/");
+};
+
 // ------------------------------------------------------------
 //
 // Model loading and OpenGL setup
@@ -1635,8 +1898,6 @@ void init()
 		exit(0);
 	}
 	ilInit();
-
-	std::string filepath = "tree/tree.obj";
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
@@ -1658,6 +1919,8 @@ void init()
 	cams[1].camPos[0] = 0.01f;
 	cams[1].camPos[1] = 200.0f;
 	cams[1].camPos[2] = 0.01f;
+
+	createTrees();
 
 	MyModel boatModel = boat.createMesh(); 
 	myModels.push_back(boatModel);
