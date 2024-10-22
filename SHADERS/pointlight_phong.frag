@@ -7,6 +7,15 @@ struct DirectionalLight {
     vec4 direction;
 }; 
 
+uniform	sampler2D texUnitDiff;
+uniform	sampler2D texUnitDiff1;
+uniform	sampler2D texUnitSpec;
+uniform	sampler2D texUnitNormalMap;
+
+uniform bool normalMap;  //for normal mapping
+uniform bool specularMap;
+uniform uint diffMapCount;
+
 struct PointLight {
     vec4 position;
 };
@@ -58,12 +67,42 @@ vec4 CalcDirLight(DirectionalLight dirLight, vec3 n, vec3 e) {
     vec4 spec = vec4(0.0);
     vec3 l = normalize(vec3(-dirLight.direction));
     float intensity = max(dot(n, l), 0.0);
+    
+    vec4 diff, auxSpec;
 
-    if (intensity > 0.0) {
-        vec3 h = normalize(l + e);
-        float intSpec = max(dot(h, n), 0.0);
-        spec = mat.specular * pow(intSpec, mat.shininess);
+    if(texMode == 3) {
+        if(mat.texCount == 0) {
+		    diff = mat.diffuse;
+		    auxSpec = mat.specular;
+	    }else {
+		    if(diffMapCount == 0){
+			    diff = mat.diffuse;
+            }
+		    else if(diffMapCount == 1){
+			    diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		    }
+            else{
+			    diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+            }
+		    if(specularMap) {
+			    auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		    }else{
+			    auxSpec = mat.specular;
+	        }
+         }
+         if (intensity > 0.0) {
+            vec3 h = normalize(l + e);
+            float intSpec = max(dot(h, n), 0.0);
+            spec = auxSpec * pow(intSpec, mat.shininess);
+        }
+    }else{
+        if (intensity > 0.0) {
+            vec3 h = normalize(l + e);
+            float intSpec = max(dot(h, n), 0.0);
+            spec = mat.specular * pow(intSpec, mat.shininess);
+        }
     }
+
 
     // return max(intensity * mat.diffuse + spec, mat.ambient);
 
@@ -76,7 +115,9 @@ vec4 CalcDirLight(DirectionalLight dirLight, vec3 n, vec3 e) {
         texel = texture(texmap, DataIn.tex_coord);
         texel1 = texture(texmap2, DataIn.tex_coord);
         return max(intensity * texel * texel1 + spec, 0.07 * texel);
-    } else {
+    }else if (texMode == 3) {
+        return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
+    }else {
         texel = texture(texmap1, DataIn.tex_coord);
         return max(intensity * texel + spec, 0.07 * texel);
     }
@@ -86,10 +127,40 @@ vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
     vec4 spec = vec4(0.0);
     float intensity = max(dot(n, l), 0.0);
 
-    if (intensity > 0.0) {
-        vec3 h = normalize(l + e);
-        float intSpec = max(dot(h, n), 0.0);
-        spec = mat.specular * pow(intSpec, mat.shininess);
+
+    vec4 diff, auxSpec;
+
+    if(texMode == 3) {
+        if(mat.texCount == 0) {
+		    diff = mat.diffuse;
+		    auxSpec = mat.specular;
+	    }else {
+		    if(diffMapCount == 0){
+			    diff = mat.diffuse;
+            }
+		    else if(diffMapCount == 1){
+			    diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		    }
+            else{
+			    diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+            }
+		    if(specularMap) {
+			    auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		    }else{
+			    auxSpec = mat.specular;
+	        }
+         }
+         if (intensity > 0.0) {
+            vec3 h = normalize(l + e);
+            float intSpec = max(dot(h, n), 0.0);
+            spec = auxSpec * pow(intSpec, mat.shininess);
+        }
+    }else{
+        if (intensity > 0.0) {
+            vec3 h = normalize(l + e);
+            float intSpec = max(dot(h, n), 0.0);
+            spec = mat.specular * pow(intSpec, mat.shininess);
+        }
     }
 
     // return max(intensity * mat.diffuse + spec, mat.ambient);
@@ -103,7 +174,10 @@ vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
         texel = texture(texmap, DataIn.tex_coord);
         texel1 = texture(texmap2, DataIn.tex_coord);
         return max(intensity * texel * texel1 + spec, 0.07 * texel);
-    } else {
+    }else if (texMode == 3) {
+        return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
+    }
+    else {
         texel = texture(texmap1, DataIn.tex_coord);
         return max(intensity * texel + spec, 0.07 * texel);
     }
@@ -111,14 +185,43 @@ vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
 
 vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
     vec4 spec = vec4(0.0);
+    vec4 diff, auxSpec;
 
     if (dot(s, l) > cutoff) {
         float intensity = max(dot(n, l), 0.0);
 
-        if (intensity > 0.0) {
-            vec3 h = normalize(l + e);
-            float intSpec = max(dot(h, n), 0.0);
-            spec = mat.specular * pow(intSpec, mat.shininess);
+
+        if(texMode == 3) {
+            if(mat.texCount == 0) {
+		        diff = mat.diffuse;
+		        auxSpec = mat.specular;
+	        }else {
+		        if(diffMapCount == 0){
+			        diff = mat.diffuse;
+                }
+		        else if(diffMapCount == 1){
+			        diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		        }
+                else{
+			        diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+                }
+		        if(specularMap) {
+			        auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		        }else{
+			        auxSpec = mat.specular;
+	            }
+             }
+             if (intensity > 0.0) {
+                vec3 h = normalize(l + e);
+                float intSpec = max(dot(h, n), 0.0);
+                spec = auxSpec * pow(intSpec, mat.shininess);
+            }
+        }else{
+            if (intensity > 0.0) {
+                vec3 h = normalize(l + e);
+                float intSpec = max(dot(h, n), 0.0);
+                spec = mat.specular * pow(intSpec, mat.shininess);
+            }
         }
 
         vec4 texel;
@@ -130,7 +233,10 @@ vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
             texel = texture(texmap, DataIn.tex_coord);
             texel1 = texture(texmap2, DataIn.tex_coord);
             return max(intensity * texel *texel1 + spec, 0.07 * texel);
-        } else {
+        }else if (texMode == 3) {
+            return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
+        }
+        else {
             texel = texture(texmap1, DataIn.tex_coord);
             return max(intensity * texel + spec, 0.07 * texel);
         }
@@ -144,9 +250,16 @@ vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
 }
 
 void main() {
-    vec3 n = normalize(DataIn.fragNormal);
     vec3 e = normalize(-DataIn.fragPosition);
     vec4 color;
+    vec3 n;
+
+    if(normalMap){
+		n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
+    }else{
+        n = normalize(DataIn.fragNormal);
+    }
+
 
     if (dirlight_mode) {
         // Initialize color with the directional light contribution
