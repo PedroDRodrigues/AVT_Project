@@ -15,6 +15,7 @@ uniform	sampler2D texUnitNormalMap;
 uniform bool normalMap;  //for normal mapping
 uniform bool specularMap;
 uniform uint diffMapCount;
+uniform bool shadowMode;
 
 struct PointLight {
     vec4 position;
@@ -117,7 +118,8 @@ vec4 CalcDirLight(DirectionalLight dirLight, vec3 n, vec3 e) {
         return max(intensity * texel * texel1 + spec, 0.07 * texel);
     }else if (texMode == 3) {
         return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
-    }else {
+    }
+    else {
         texel = texture(texmap1, DataIn.tex_coord);
         return max(intensity * texel + spec, 0.07 * texel);
     }
@@ -176,8 +178,7 @@ vec4 CalcPointLight(vec3 l, vec3 n, vec3 e) {
         return max(intensity * texel * texel1 + spec, 0.07 * texel);
     }else if (texMode == 3) {
         return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
-    }
-    else {
+    }else {
         texel = texture(texmap1, DataIn.tex_coord);
         return max(intensity * texel + spec, 0.07 * texel);
     }
@@ -235,8 +236,7 @@ vec4 calcSpotLight(vec3 l, vec3 s, float cutoff, vec3 n, vec3 e) {
             return max(intensity * texel *texel1 + spec, 0.07 * texel);
         }else if (texMode == 3) {
             return vec4((max(intensity * diff, diff*0.15) + spec).rgb, 1.0);
-        }
-        else {
+        }else {
             texel = texture(texmap1, DataIn.tex_coord);
             return max(intensity * texel + spec, 0.07 * texel);
         }
@@ -253,45 +253,57 @@ void main() {
     vec3 e = normalize(-DataIn.fragPosition);
     vec4 color;
     vec3 n;
+    if(texMode != 4){
+        if(shadowMode){  //constant color
+		    colorOut = vec4(0.5, 0.5, 0.5, 1.0);
+        }else{
+            if(normalMap){
+		        n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
+            }else{
+                n = normalize(DataIn.fragNormal);
+            }
 
-    if(normalMap){
-		n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
-    }else{
-        n = normalize(DataIn.fragNormal);
-    }
 
-
-    if (dirlight_mode) {
-        // Initialize color with the directional light contribution
-        color = CalcDirLight(dirLight, n, e);
-    }
+            if (dirlight_mode) {
+                // Initialize color with the directional light contribution
+                color = CalcDirLight(dirLight, n, e);
+            }
     
-    if (pointlight_mode) {
-        // Add contributions from all point lights
-        for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
-            vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
-            vec3 l = normalize(pl);
-            color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
-        }
+            if (pointlight_mode) {
+                // Add contributions from all point lights
+                for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+                    vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
+                    vec3 l = normalize(pl);
+                    color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
+                }
+            }
+
+            if (spotlight_mode) {
+                // Add contributions from all spot lights
+                for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+                    vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
+                    vec3 s = normalize(-spotLightsPos[i].direction);
+                    float cutoff = spotLightsPos[i].cutoff;
+                    color += calcSpotLight(l, s, cutoff, n, e);
+                }
+            }
+
+            color = vec4(color.rgb, mat.diffuse.a);
+
+            // Apply fog effect
+            float distance = length(DataIn.fragPosition);
+            float fogFactor = exp(-fogDensity * (distance - fogStart));
+            fogFactor = clamp(fogFactor, 0.0, 1.0);
+            colorOut = mix(fogColor, color, fogFactor);
+
+            // colorOut = vec4(foggedColor.rgb, mat.alpha);
+            }
+    }else{
+        vec4 texel;
+        texel = texture(texmap, DataIn.tex_coord);  //texel from element flare texture
+		    if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		    else
+			    colorOut = mat.diffuse * texel;
     }
-
-    if (spotlight_mode) {
-        // Add contributions from all spot lights
-        for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
-            vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
-            vec3 s = normalize(-spotLightsPos[i].direction);
-            float cutoff = spotLightsPos[i].cutoff;
-            color += calcSpotLight(l, s, cutoff, n, e);
-        }
-    }
-
-    color = vec4(color.rgb, mat.diffuse.a);
-
-    // Apply fog effect
-    float distance = length(DataIn.fragPosition);
-    float fogFactor = exp(-fogDensity * (distance - fogStart));
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
-    colorOut = mix(fogColor, color, fogFactor);
-
-    // colorOut = vec4(foggedColor.rgb, mat.alpha);
+   
 }
