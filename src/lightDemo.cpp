@@ -1049,9 +1049,6 @@ void renderObjects() {
 			glBindVertexArray(myMeshes[objId].vao);
 			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 			popMatrix(MODEL);
-
-			//	if (type==0 || type==1) // restore matrix VIEW_MODEL n�o � necess�rio pois a PVM � sempre calculada a pArtir da MODEL e da VIEW que n�o s�o ALTERADAS
-
 			popMatrix(MODEL);
 		}
 }
@@ -1274,8 +1271,8 @@ void renderScene(void) {
 		float boatDirection[3] = { boat.getDirection()[0], boat.getDirection()[1], boat.getDirection()[2] };
 
 		for (int i = 0; i < 3; i++) {
-			rearCamPos[i] = boat.getPosition()[i];
-			rearCamTarget[i] = boat.getPosition()[i] - boatDirection[i] * 10.0f;
+			rearCamPos[i] = boat.getPosition()[i] - boatDirection[i] * 10.0f;
+			rearCamTarget[i] = boat.getPosition()[i] - boatDirection[i] * 100.0f;
 		}
 
 		lookAt(
@@ -1356,10 +1353,6 @@ void renderScene(void) {
 
 		}
 
-		//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
-		//glDisable(GL_DEPTH_TEST);
-		//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
-
 		int m_viewport[4];
 		glGetIntegerv(GL_VIEWPORT, m_viewport);
 
@@ -1379,13 +1372,9 @@ void renderScene(void) {
 
 		pushMatrix(VIEW);
 		loadIdentity(VIEW);
-		//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-		//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
 		popMatrix(PROJECTION);
 		popMatrix(VIEW);
 		popMatrix(MODEL);
-		//glEnable(GL_DEPTH_TEST);
-		//glDisable(GL_BLEND);
 
 		if (flareEffect) {
 
