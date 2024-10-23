@@ -1263,7 +1263,7 @@ void renderScene(void) {
 		glDrawElements(myMeshes[64].type, myMeshes[64].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		loadIdentity(PROJECTION);
-		perspective(45.0f, WinX / WinY, 0.1f, 1000.0f);
+		perspective(80.0f, WinX / WinY, 0.1f, 1000.0f);
 
 		loadIdentity(VIEW);
 		float rearCamPos[3];
@@ -1291,6 +1291,8 @@ void renderScene(void) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		// accept cull_face e depois voltar atras
+		// sacale (MODEL, 1, 1, -1)
 		renderObjects();
 
 		if (fireworks) {
