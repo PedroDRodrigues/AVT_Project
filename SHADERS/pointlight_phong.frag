@@ -11,6 +11,9 @@ uniform	sampler2D texUnitDiff;
 uniform	sampler2D texUnitDiff1;
 uniform	sampler2D texUnitSpec;
 uniform	sampler2D texUnitNormalMap;
+uniform sampler2D normalSphereMap;
+uniform sampler2D sphereMap;
+uniform samplerCube cubeMap;
 
 uniform bool normalMap;  //for normal mapping
 uniform bool specularMap;
@@ -60,6 +63,7 @@ in Data {
     vec3 fragPosition;
     vec3 fragNormal;
     vec2 tex_coord;
+    vec3 skyboxTexCoord;
 } DataIn;
 
 out vec4 colorOut;
@@ -253,57 +257,78 @@ void main() {
     vec3 e = normalize(-DataIn.fragPosition);
     vec4 color;
     vec3 n;
-    if(texMode != 4){
-        if(shadowMode){  //constant color
-		    colorOut = vec4(0.5, 0.5, 0.5, 1.0);
-        }else{
-            if(normalMap){
-		        n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
-            }else{
-                n = normalize(DataIn.fragNormal);
-            }
+    if(!shadowMode){
+        if(texMode < 4){
+                if(normalMap){
+		            n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
+                }else{
+                    n = normalize(DataIn.fragNormal);
+                }
 
 
-            if (dirlight_mode) {
-                // Initialize color with the directional light contribution
-                color = CalcDirLight(dirLight, n, e);
-            }
+                if (dirlight_mode) {
+                    // Initialize color with the directional light contribution
+                    color = CalcDirLight(dirLight, n, e);
+                }
     
-            if (pointlight_mode) {
-                // Add contributions from all point lights
-                for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
-                    vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
-                    vec3 l = normalize(pl);
-                    color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
+                if (pointlight_mode) {
+                    // Add contributions from all point lights
+                    for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+                        vec3 pl = vec3(pointLightsPos[i].position - vec4(DataIn.fragPosition, 1.0));
+                        vec3 l = normalize(pl);
+                        color += CalcPointLight(l, n, e) / NUM_POINT_LIGHTS;
+                    }
                 }
-            }
 
-            if (spotlight_mode) {
-                // Add contributions from all spot lights
-                for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
-                    vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
-                    vec3 s = normalize(-spotLightsPos[i].direction);
-                    float cutoff = spotLightsPos[i].cutoff;
-                    color += calcSpotLight(l, s, cutoff, n, e);
+                if (spotlight_mode) {
+                    // Add contributions from all spot lights
+                    for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+                        vec3 l = normalize(vec3(spotLightsPos[i].position - vec4(DataIn.fragPosition, 1.0)));
+                        vec3 s = normalize(-spotLightsPos[i].direction);
+                        float cutoff = spotLightsPos[i].cutoff;
+                        color += calcSpotLight(l, s, cutoff, n, e);
+                    }
                 }
-            }
 
-            color = vec4(color.rgb, mat.diffuse.a);
+                color = vec4(color.rgb, mat.diffuse.a);
 
-            // Apply fog effect
-            float distance = length(DataIn.fragPosition);
-            float fogFactor = exp(-fogDensity * (distance - fogStart));
-            fogFactor = clamp(fogFactor, 0.0, 1.0);
-            colorOut = mix(fogColor, color, fogFactor);
+                // Apply fog effect
+                float distance = length(DataIn.fragPosition);
+                float fogFactor = exp(-fogDensity * (distance - fogStart));
+                fogFactor = clamp(fogFactor, 0.0, 1.0);
+                colorOut = mix(fogColor, color, fogFactor);
 
-            // colorOut = vec4(foggedColor.rgb, mat.alpha);
-            }
-    }else{
-        vec4 texel;
-        texel = texture(texmap, DataIn.tex_coord);  //texel from element flare texture
-		    if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+                // colorOut = vec4(foggedColor.rgb, mat.alpha);
+        }else if (texMode==4){
+            vec4 texel;
+            texel = texture(texmap, DataIn.tex_coord);  //texel from element flare texture
+		        if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		        else
+			        colorOut = mat.diffuse * texel;
+        }else if(texMode==5){
+            vec4 texel;
+
+            vec3 spec = mat.specular.rgb * pow(1, mat.shininess);
+            texel = texture(texmap, DataIn.tex_coord);  
+		
+		    if(texel.a == 0.0) discard;
 		    else
-			    colorOut = mat.diffuse * texel;
+			    colorOut = vec4(max(1*texel.rgb + spec, 0.1*texel.rgb), texel.a);
+	    }else if(texMode==6){
+            vec4 texel;
+
+            vec3 spec = mat.specular.rgb * pow(1, mat.shininess);
+            texel = texture(texmap, DataIn.tex_coord);  
+		
+		    if(texel.a == 0.0) discard;
+		    else
+			    colorOut = vec4(max(1*texel.rgb + spec, 0.1*texel.rgb), texel.a);
+	    }/*else if (texMode == 7) {   //SkyBox
+		    colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
+        }*/
+    }else{
+        colorOut = vec4(0.5, 0.5, 0.5, 1.0);
     }
+    
+ }
    
-}

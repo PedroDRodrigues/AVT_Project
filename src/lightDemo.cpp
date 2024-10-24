@@ -123,6 +123,8 @@ float waterSize = 120.0f;
 // boat object
 Boat boat = Boat();
 
+MyMesh skybox;
+
 //External array storage defined in AVTmathLib.cpp
 
 /// The storage for matrices
@@ -140,8 +142,9 @@ GLint sPos_uniformId[NUM_SPOT_LIGHTS];
 GLint sDir_uniformId[NUM_SPOT_LIGHTS];
 GLint sCut_uniformId[NUM_SPOT_LIGHTS];
 GLint dPos_uniformId;
-GLint tex_loc, tex_loc1, tex_loc2;
+GLint tex_loc, tex_loc1, tex_loc2, tex_sphereMap_loc, tex_normalMap_loc, tex_cube_loc;
 GLint texMode_uniformId, shadowMode_uniformId;
+GLint model_uniformId;
 
 GLint normalMap_loc;
 GLint specularMap_loc;
@@ -151,7 +154,7 @@ FLARE_DEF AVTflare;
 float lightScreenPos[3];
 
 
-GLuint TextureArray[4];
+GLuint TextureArray[8];
 GLuint FlareTextureArray[5];
 //GLuint FlareTextureArray[5];
 
@@ -186,7 +189,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 //float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
-float dirLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
+float dirLightPos[4]{ 600.0f, 1000.0f, 600.0f, 0.0f };
 float pointLightsPos[NUM_POINT_LIGHTS][4] = { {0.0f, 4.0f, 0.0f, 1.0f},
 					{-35.0f, 20.0f, -25.0f, 1.0f},
 					{-100.0f, 20.0f, -10.0f, 1.0f},
@@ -333,9 +336,9 @@ void iniParticles(void)
 		phi = frand() * M_PI;
 		theta = 2.0 * frand() * M_PI;
 
-		particula[i].x = 0.0f;
-		particula[i].y = 10.0f;
-		particula[i].z = 0.0f;
+		particula[i].x = boat.getPosition()[0];
+		particula[i].y = 4.0f;
+		particula[i].z = boat.getPosition()[2];
 		particula[i].vx = v * cos(theta) * sin(phi);
 		particula[i].vy = v * cos(phi);
 		particula[i].vz = v * sin(theta) * sin(phi);
@@ -607,7 +610,7 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 
 				//Activate a TU with a Texture Object
 				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
-				glActiveTexture(GL_TEXTURE3 + TU);
+				glActiveTexture(GL_TEXTURE5 + TU);
 				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
 
 				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
@@ -784,7 +787,6 @@ void renderTrees() {
 	aiRecursive_render(scene->mRootNode, myMeshes1[3], textureIds);
 	popMatrix(MODEL);
 
-
 	pushMatrix(MODEL);
 	scale(MODEL, scaleFactor * 10, scaleFactor * 10, scaleFactor * 10);
 	translate(MODEL, 70, 0, 50);
@@ -858,19 +860,13 @@ void renderTrees() {
 	popMatrix(MODEL);
 }
 
-void renderObjects() {
+void renderTerrain() {
 
 	float pos[3], right[3], up[3];
 	int objId = 0;
 	GLint loc;
 
-	glUniform1i(texMode_uniformId, 3);
-
-	renderTrees();
-
-	glUniform1i(texMode_uniformId, 0);
-
-	for (int i = 0; i < myMeshes.size(); i++) {
+	for (int i = 0; i < 2; i++) {
 
 		MyMesh currMesh = myMeshes[i];
 
@@ -885,18 +881,25 @@ void renderObjects() {
 		glUniform1f(loc, currMesh.mat.shininess);
 
 		pushMatrix(MODEL);
+
 		if (currMesh.name == "terrain") {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			glUniform1i(texMode_uniformId, 2);
 		}
 		else if (currMesh.name == "water") {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 			translate(MODEL, 0.0f, 0.0f, 0.05f);
-		}
-		else if (currMesh.name == "house") {
-			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
-		}
-		else if (currMesh.name == "obstacle") {
-			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+			glUniform1i(texMode_uniformId, 1);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+			glUniform1i(tex_loc, 0);
+			glUniform1i(tex_loc2, 2);
+
+
 		}
 
 		// send matrices to OGL
@@ -906,15 +909,7 @@ void renderObjects() {
 		computeNormalMatrix3x3();
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-		if (currMesh.name == "water") {
-			glUniform1i(texMode_uniformId, 1);
-		}
-		else if (currMesh.name == "terrain") {
-			glUniform1i(texMode_uniformId, 2);
-		}
-		else {
-			glUniform1i(texMode_uniformId, 0);
-		}
+
 
 		// Render mesh
 		glBindVertexArray(currMesh.vao);
@@ -923,6 +918,70 @@ void renderObjects() {
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
+	}
+}
+
+
+void renderObjects() {
+
+	float pos[3], right[3], up[3];
+	int objId = 0;
+	GLint loc;
+
+	glUniform1i(texMode_uniformId, 3);
+
+	renderTrees();
+
+	glUniform1i(texMode_uniformId, 0);
+
+	for (int i = 2; i < myMeshes.size(); i++) {
+
+		MyMesh currMesh = myMeshes[i];
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, currMesh.mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, currMesh.mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, currMesh.mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, currMesh.mat.shininess);
+
+		pushMatrix(MODEL);
+		if (currMesh.name == "house") {
+			glUniform1i(texMode_uniformId, 0);
+			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+
+		}
+		else if (currMesh.name == "obstacle") {
+			glUniform1i(texMode_uniformId, 6);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+			translate(MODEL, currMesh.xPosition, currMesh.yPosition, currMesh.zPosition);
+		}
+		glUniform1i(tex_loc, 0);
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+
+
+		// Render mesh
+		glBindVertexArray(currMesh.vao);
+
+		glDrawElements(currMesh.type, currMesh.numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	for (int i = 0; i < myModels.size(); i++) {
@@ -1005,56 +1064,134 @@ void renderObjects() {
 		popMatrix(MODEL);
 	}
 
-	glUniform1i(texMode_uniformId, 1); // draw textured quads
+	glUniform1i(tex_loc, 0);
+	glUniform1i(texMode_uniformId, 5); // draw textured quads
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+	for (int j = -5; j < 0; j++) {
+		pushMatrix(MODEL);
+		translate(MODEL, 65, 0, 60 + j * 20.0);
 
-	for (int i = -5; i < 5; i++)
-		for (int j = -5; j < 5; j++) {
-			pushMatrix(MODEL);
-			translate(MODEL, 5 + i * 10.0, 0, 5 + j * 10.0);
+		pos[0] = 65; pos[1] = 0; pos[2] = 60 + j * 20.0;
 
-			pos[0] = 5 + i * 10.0; pos[1] = 0; pos[2] = 5 + j * 10.0;
+		if (type == 2)
+			l3dBillboardSphericalBegin(cams[activeCam].camPos, pos);
+		else if (type == 3)
+			l3dBillboardCylindricalBegin(cams[activeCam].camPos, pos);
 
-			if (type == 2)
-				l3dBillboardSphericalBegin(cams[activeCam].camPos, pos);
-			else if (type == 3)
-				l3dBillboardCylindricalBegin(cams[activeCam].camPos, pos);
+		objId = 62;
 
-			objId = 62;
+		//diffuse and ambient color are not used in the tree quads
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
 
-			//diffuse and ambient color are not used in the tree quads
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+		translate(MODEL, 0.0, 3.0, 0.0f);
 
-			pushMatrix(MODEL);
-			translate(MODEL, 0.0, 3.0, 0.0f);
+		// send matrices to OGL
+		if (type == 0 || type == 1) {     //Cheating matrix reset billboard techniques
+			computeDerivedMatrix(VIEW_MODEL);
 
-			// send matrices to OGL
-			if (type == 0 || type == 1) {     //Cheating matrix reset billboard techniques
-				computeDerivedMatrix(VIEW_MODEL);
+			//reset VIEW_MODEL
+			if (type == 0) BillboardCheatSphericalBegin();
+			else BillboardCheatCylindricalBegin();
 
-				//reset VIEW_MODEL
-				if (type == 0) BillboardCheatSphericalBegin();
-				else BillboardCheatCylindricalBegin();
-
-				computeDerivedMatrix_PVM(); // calculate PROJ_VIEW_MODEL
-			}
-			else computeDerivedMatrix(PROJ_VIEW_MODEL);
-
-			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-			computeNormalMatrix3x3();
-			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-			glBindVertexArray(myMeshes[objId].vao);
-			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-			popMatrix(MODEL);
-			popMatrix(MODEL);
+			computeDerivedMatrix_PVM(); // calculate PROJ_VIEW_MODEL
 		}
+		else computeDerivedMatrix(PROJ_VIEW_MODEL);
+
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		popMatrix(MODEL);
+		popMatrix(MODEL);
+	}
+
+	for (int j = -5; j < 0; j++) {
+		pushMatrix(MODEL);
+		translate(MODEL, -65, 0, 60 + j * 20.0);
+
+		pos[0] = -65; pos[1] = 0; pos[2] = 60 + j * 20.0;
+
+		if (type == 2)
+			l3dBillboardSphericalBegin(cams[activeCam].camPos, pos);
+		else if (type == 3)
+			l3dBillboardCylindricalBegin(cams[activeCam].camPos, pos);
+
+		objId = 62;
+
+		//diffuse and ambient color are not used in the tree quads
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+
+		pushMatrix(MODEL);
+		translate(MODEL, 0.0, 3.0, 0.0f);
+
+		// send matrices to OGL
+		if (type == 0 || type == 1) {     //Cheating matrix reset billboard techniques
+			computeDerivedMatrix(VIEW_MODEL);
+
+			//reset VIEW_MODEL
+			if (type == 0) BillboardCheatSphericalBegin();
+			else BillboardCheatCylindricalBegin();
+
+			computeDerivedMatrix_PVM(); // calculate PROJ_VIEW_MODEL
+		}
+		else computeDerivedMatrix(PROJ_VIEW_MODEL);
+
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		popMatrix(MODEL);
+		popMatrix(MODEL);
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void invertLights() {
+	float res[4];
+	/*for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
+		// Render the reflected geometry
+		for (int j = 0; j < 4; j++) {
+			spotLightsPos[i][j] *= -1.0;  //mirror the position of light
+		}
+		multMatrixPoint(VIEW, spotLightsPos[i], res);
+
+		glUniform4fv(sPos_uniformId[i], 1, res);
+	}
+
+	for (int i = 0; i < NUM_POINT_LIGHTS; i++) {
+		// Render the reflected geometry
+		for (int j = 0; j < 4; j++) {
+			pointLightsPos[i][j] *= -1.0;  //mirror the position of light
+		}
+		multMatrixPoint(VIEW, pointLightsPos[i], res);
+
+		glUniform4fv(lPos_uniformId[i], 1, res);
+	}*/
+
+	for (int j = 0; j < 4; j++) {
+		dirLightPos[j] *= -1.0;  //mirror the position of light
+	}
+	multMatrixPoint(VIEW, dirLightPos, res);
+
+	glUniform4fv(dPos_uniformId, 1, res);
+
 }
 
 void renderScene(void) {
-
+	float mat[16];
+	GLfloat plano_chao[4] = { 0,1,0,0 };
 	float particle_color[4];
 	float pos[3], right[3], up[3];
 
@@ -1149,10 +1286,18 @@ void renderScene(void) {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+		//glActiveTexture(GL_TEXTURE3);
+		//glBindTexture(GL_TEXTURE_2D, TextureArray[6]);
+		
+		//glActiveTexture(GL_TEXTURE4);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[7]);
+
 		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 		glUniform1i(tex_loc, 0);
 		glUniform1i(tex_loc1, 1);
 		glUniform1i(tex_loc2, 2);
+		//glUniform1i(tex_sphereMap_loc, 3);
+		//glUniform1i(tex_cube_loc, 4);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1244,7 +1389,93 @@ void renderScene(void) {
 			checkCollisionCreatures(creatures[i], boat);
 		}
 
+		/*
+		glUniform1i(texMode_uniformId, 7);
+
+		//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
+		glDepthMask(GL_FALSE);
+		glFrontFace(GL_CW); // set clockwise vertex order to mean the front
+
+		pushMatrix(MODEL);
+		pushMatrix(VIEW);  //se quiser anular a translação
+
+		//  Fica mais realista se não anular a translação da câmara 
+		// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+		mMatrix[VIEW][12] = 0.0f;
+		mMatrix[VIEW][13] = 0.0f;
+		mMatrix[VIEW][14] = 0.0f;
+
+		scale(MODEL, 100.0f, 100.0f, 100.0f);
+		translate(MODEL, -0.5f, -0.5f, -0.5f);
+
+		// send matrices to OGL
+		glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+
+		glBindVertexArray(skybox.vao);
+		glDrawElements(skybox.type, skybox.numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		popMatrix(MODEL);
+		popMatrix(VIEW);
+
+		glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
+		glDepthMask(GL_TRUE);*/
+
+		//glUniform1i(texMode_uniformId, 0);
+		
+		
+		
+		glEnable(GL_STENCIL_TEST);        // Escrever 1 no stencil buffer onde se for desenhar a reflexão e a sombra
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+		renderTerrain();
+
+		// Desenhar apenas onde o stencil buffer esta a 1
+		glStencilFunc(GL_EQUAL, 0x1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		invertLights();
+
+		pushMatrix(MODEL);
+		scale(MODEL, 1.0f, -1.0f, 1.0f);
+		glCullFace(GL_FRONT);
 		renderObjects();
+		glCullFace(GL_BACK);
+		popMatrix(MODEL);
+
+		invertLights();
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		renderTerrain();
+
+		// Render the Shadows
+		glUniform1i(shadowMode_uniformId, 1);
+
+		shadow_matrix(mat, plano_chao, dirLightPos);
+		glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
+
+		//Dark the color stored in color buffer
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+
+		pushMatrix(MODEL);
+		multMatrix(MODEL, mat);
+
+		renderObjects();
+		popMatrix(MODEL);
+
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+
+		//render the geometry
+		glUniform1i(shadowMode_uniformId, 0);
+		renderObjects();
+
+		//MIRROR
 
 		//glDepthMask(GL_TRUE);
 
@@ -1293,6 +1524,7 @@ void renderScene(void) {
 
 		// accept cull_face e depois voltar atras
 		// sacale (MODEL, 1, 1, -1)
+		renderTerrain();
 		renderObjects();
 
 		if (fireworks) {
@@ -1302,6 +1534,7 @@ void renderScene(void) {
 			// draw fireworks particles
 			int objId = 6;  //quad for particle
 
+			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, TextureArray[3]); //particle.tga associated to TU0 
 
 			glEnable(GL_BLEND);
@@ -1714,10 +1947,14 @@ GLuint setupShaders() {
 
 	dPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	shadowMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "shadowMode");
+	model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	tex_normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalSphereMap");
+	tex_sphereMap_loc = glGetUniformLocation(shader.getProgramIndex(), "sphereMap");
+	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	fogColorLoc = glGetUniformLocation(shader.getProgramIndex(), "fogColor");
 	fogStartLoc = glGetUniformLocation(shader.getProgramIndex(), "fogStart");
@@ -1770,6 +2007,51 @@ void createTrees() {
 	strcpy(model_dir, "tree/");
 };
 
+MyMesh createBillboard() {
+	// create quad for billboard objID = 62
+
+	//tree specular color
+	float tree_spec[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	float tree_shininess = 10.0f;
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	MyMesh amesh = createQuad(10.0f, 10.0f);
+	memcpy(amesh.mat.specular, tree_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = tree_shininess;
+	amesh.mat.texCount = 0;
+
+
+	return amesh;
+}
+
+void createSkyBox() {
+
+	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+	float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+
+	float amb1[] = { 0.3f, 0.0f, 0.0f, 1.0f };
+	float diff1[] = { 0.8f, 0.1f, 0.1f, 1.0f };
+	float spec1[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+
+
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
+
+	int texcount = 0;
+
+	// create geometry and VAO of the cube, objId=2;
+	skybox = createCube();
+	memcpy(skybox.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(skybox.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(skybox.mat.specular, spec, 4 * sizeof(float));
+	memcpy(skybox.mat.emissive, emissive, 4 * sizeof(float));
+	skybox.mat.shininess = shininess;
+	skybox.mat.texCount = texcount;
+	
+}
+
 void init()
 {
 	MyMesh amesh;
@@ -1787,11 +2069,19 @@ void init()
 	freeType_init(font_name);
 
 	//Texture Object definition
-	glGenTextures(4, TextureArray);
+	glGenTextures(8, TextureArray);
 	Texture2D_Loader(TextureArray, "agua.png", 0);
 	Texture2D_Loader(TextureArray, "relva1.png", 1);
 	Texture2D_Loader(TextureArray, "water.png", 2);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
+	Texture2D_Loader(TextureArray, "tree.tga", 4);
+	Texture2D_Loader(TextureArray, "pedra.png", 5);
+	Texture2D_Loader(TextureArray, "sphereMap.jpg", 6);
+
+	//Sky Box Texture Object
+	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
+
+	TextureCubeMap_Loader(TextureArray, filenames, 7);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);
@@ -1818,6 +2108,7 @@ void init()
 	MyModel boatModel = boat.createMesh();
 	myModels.push_back(boatModel);
 
+
 	MyMesh terrainMesh = createTerrainMesh(terrainSize); // 0
 	myMeshes.push_back(terrainMesh);
 
@@ -1831,7 +2122,8 @@ void init()
 	myMeshes.insert(myMeshes.end(), obstacleMeshes.begin(), obstacleMeshes.end());
 
 	// create quad for billboard objID = 62
-	amesh = createQuad(2.0f, 2.0f);
+	amesh = createBillboard();
+
 	myMeshes.push_back(amesh);
 
 	// create points for particles = 63
@@ -1852,6 +2144,8 @@ void init()
 	// create geometry and VAO of the quad for flare elements
 	amesh = createQuad(1, 1);
 	myMeshes.push_back(amesh); // ==65
+
+	createSkyBox();  
 
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
