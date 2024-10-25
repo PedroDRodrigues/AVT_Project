@@ -337,13 +337,13 @@ void iniParticles(void)
 		theta = 2.0 * frand() * M_PI;
 
 		particula[i].x = boat.getPosition()[0];
-		particula[i].y = 4.0f;
+		particula[i].y = 10.0f;
 		particula[i].z = boat.getPosition()[2];
 		particula[i].vx = v * cos(theta) * sin(phi);
 		particula[i].vy = v * cos(phi);
 		particula[i].vz = v * sin(theta) * sin(phi);
-		particula[i].ax = 0.1f; /* simular um pouco de vento */
-		particula[i].ay = -0.15f; /* simular a acelera��o da gravidade */
+		particula[i].ax = 0.05f; /* simular um pouco de vento */
+		particula[i].ay = -0.10f; /* simular a acelera��o da gravidade */
 		particula[i].az = 0.0f;
 
 		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
@@ -351,7 +351,7 @@ void iniParticles(void)
 		particula[i].g = 0.552f;
 		particula[i].b = 0.211f;
 
-		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].life = 1.0f;			/* vida inicial */
 		particula[i].fade = 0.0025f;	    /* step de decr�scimo da vida para cada itera��o */
 	}
 }
@@ -1289,15 +1289,15 @@ void renderScene(void) {
 		//glActiveTexture(GL_TEXTURE3);
 		//glBindTexture(GL_TEXTURE_2D, TextureArray[6]);
 		
-		//glActiveTexture(GL_TEXTURE4);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[7]);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[7]);
 
 		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 		glUniform1i(tex_loc, 0);
 		glUniform1i(tex_loc1, 1);
 		glUniform1i(tex_loc2, 2);
 		//glUniform1i(tex_sphereMap_loc, 3);
-		//glUniform1i(tex_cube_loc, 4);
+		glUniform1i(tex_cube_loc, 4);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1381,6 +1381,11 @@ void renderScene(void) {
 				fireworks = 0;
 			}
 
+			for (int j = 0; j < 10000000; j++)
+			{
+				// wait for a while
+			}
+
 			// Restart boat position
 			boat.setPosition(0.0f, 5.0f, 0.0f);
 		}
@@ -1389,7 +1394,7 @@ void renderScene(void) {
 			checkCollisionCreatures(creatures[i], boat);
 		}
 
-		/*
+		
 		glUniform1i(texMode_uniformId, 7);
 
 		//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
@@ -1420,9 +1425,9 @@ void renderScene(void) {
 		popMatrix(VIEW);
 
 		glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
-		glDepthMask(GL_TRUE);*/
+		glDepthMask(GL_TRUE);
 
-		//glUniform1i(texMode_uniformId, 0);
+		glUniform1i(texMode_uniformId, 0);
 		
 		
 		
@@ -1479,7 +1484,9 @@ void renderScene(void) {
 
 		//glDepthMask(GL_TRUE);
 
-		glClear(GL_STENCIL_BUFFER_BIT);
+		scale(MODEL, 0.1f, 0.1f, 0.1f);
+
+		glClear(GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glStencilFunc(GL_NEVER, 0x1, 0x1);
 		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
@@ -1926,7 +1933,7 @@ GLuint setupShaders() {
 	if (!shader.isProgramValid()) {
 		printf("GLSL Model Program Not Valid!\n");
 		printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-		exit(1);
+		//exit(1);
 	}
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");

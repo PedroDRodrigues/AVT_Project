@@ -323,9 +323,9 @@ void main() {
 		    if(texel.a == 0.0) discard;
 		    else
 			    colorOut = vec4(max(1*texel.rgb + spec, 0.1*texel.rgb), texel.a);
-	    }/*else if (texMode == 7) {   //SkyBox
+	    } else if (texMode == 7) {   //SkyBox
 		    colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
-        }*/
+        }
     }else{
         colorOut = vec4(0.5, 0.5, 0.5, 1.0);
     }

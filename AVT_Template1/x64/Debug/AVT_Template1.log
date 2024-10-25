@@ -1,0 +1,67 @@
+﻿  lightDemo.cpp
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,25): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,25): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,54): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,54): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,83): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(201,83): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,25): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,25): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,54): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,54): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,83): warning C4838: a conversão de 'double' em 'float' requer uma conversão de restrição
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(202,83): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(254,6): warning C4305: '=': truncamento de 'double' para 'float'
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(309,49): warning C4244: '=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(335,21): warning C4244: '=': conversão de 'double' para 'GLfloat', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(336,17): warning C4244: '=': conversão de 'double' para 'GLfloat', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(337,25): warning C4244: '=': conversão de 'double' para 'GLfloat', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(535,103): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(535,70): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(535,53): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(535,20): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(609,31): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(703,21): warning C4244: '=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(704,18): warning C4244: '=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(706,22): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(707,20): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(730,38): warning C4244: '=': conversão de 'float' para 'int', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(684,25): warning C4101: 'alpha': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(865,26): warning C4101: 'up': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(865,8): warning C4101: 'pos': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(865,16): warning C4101: 'right': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1073,30): warning C4244: 'argumento': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1075,40): warning C4244: '=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1117,31): warning C4244: 'argumento': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1119,41): warning C4244: '=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(927,26): warning C4101: 'up': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(927,16): warning C4101: 'right': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1511,27): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1616,24): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1619,44): warning C4305: 'argumento': truncamento de 'double' para 'float'
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1619,29): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1619,16): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1649,105): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1649,72): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1649,55): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1649,22): warning C4244: 'argumento': conversão de 'int' para 'float', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1196,26): warning C4101: 'up': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1196,8): warning C4101: 'pos': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1196,16): warning C4101: 'right': variável local não referenciada
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1893,53): warning C4244: '=': conversão de 'double' para '_Ty', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1893,53): warning C4244:         with
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1893,53): warning C4244:         [
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1893,53): warning C4244:             _Ty=float
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1893,53): warning C4244:         ]
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1894,21): warning C4244: '=': conversão de 'double' para '_Ty', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1894,21): warning C4244:         with
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1894,21): warning C4244:         [
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1894,21): warning C4244:             _Ty=float
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1894,21): warning C4244:         ]
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1895,53): warning C4244: '=': conversão de 'double' para '_Ty', possível perda de dados
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1895,53): warning C4244:         with
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1895,53): warning C4244:         [
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1895,53): warning C4244:             _Ty=float
+C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\src\lightDemo.cpp(1895,53): warning C4244:         ]
+  AVT_Template1.vcxproj -> C:\Users\pedro\OneDrive\Documentos\Visual Studio 2022\Templates\ProjectTemplates\AVT_ULTIMA\AVT_Project\x64\Debug\AVT_Template1.exe
+  0 File(s) copied
